@@ -283,7 +283,9 @@ class SimdexTest(unittest.TestCase):
       
         """
         simdex = Simdex()
-        self.assertEqual(self.sims, simdex.simulations.sort())
+        filenames = simdex.get_filenames('path')
+        filenames.sort()
+        self.assertEqual(self.sims[1:], filenames)
         
         
     def test_init_subfolder(self):
@@ -291,15 +293,18 @@ class SimdexTest(unittest.TestCase):
        
        folder = path.join(self.cwd, 'Subfolder')
        simdex = Simdex(folder)
-       
-       self.assertEqual(self.filenames, simdex.get_filenames().sort())
+       filenames = simdex.get_filenames()
+       filenames.sort()
+       self.assertEqual(self.filenames, filenames)
        
     def test_init_subfolder_with_spaces(self):
        """ Test initiation from a folder with spaces with absolute pathname"""
        
        folder = path.join(self.cwd, 'A Subfolder with Spaces')
        simdex = Simdex(folder)
-       self.assertEqual(self.filenames, simdex.get_filenames().sort())
+       filenames = simdex.get_filenames()
+       filenames.sort()
+       self.assertEqual(self.filenames, filenames)
        
     def test_init_array_big(self):
        """ Test initiation with a large .mat file"""
@@ -326,7 +331,9 @@ class SimdexTest(unittest.TestCase):
        
        folder = path.join(self.cwd, 'SubfolderWithCrappyFiles')
        simdex = Simdex(folder)
-       self.assertEqual(self.filenames, simdex.get_filenames().sort())
+       filenames = simdex.get_filenames()
+       filenames.sort()
+       self.assertEqual(self.filenames, filenames)
        
     def test_exist(self):
         """
