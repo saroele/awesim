@@ -1,3 +1,9 @@
 *.zip
 *.pyc
 *.log
+dsfinal.txt
+dsin.txt
+dslog.txt
+dsmodel.c
+dymosim.exe
+buildlog.txt
