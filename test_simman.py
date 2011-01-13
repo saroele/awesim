@@ -351,6 +351,11 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(u'Time', simdex.exist('time')[1][0], 
                          'Simulation.exist() should ignore case' )
         self.assertEqual([[],[]], simdex.exist('this does not exist'))
+        
+    def test_filter(self):
+        """
+        """
+        pass
        
        
 #if __name__ == '__main__':
