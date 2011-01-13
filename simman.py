@@ -881,9 +881,9 @@ class Simdex:
         self.variablemap = self.variablemap[vars_to_keep]
         
 
-    def get_parameter(self, parameter):
+    def get_parameters(self, parameter):
         '''
-        get_parameter(parameter)
+        get_parameters(parameter)
         
         parameter = string with exact parameter name
         
