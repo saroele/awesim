@@ -121,7 +121,7 @@ class SimulationTest(unittest.TestCase):
         Test if :
         1) running Simulation.exist() gives a match when it should
            (different cases are tested)
-        2) running Simulation.exist() gives a zero list for non-pressent regex
+        2) running Simulation.exist() gives a zero list for non-present regex
         
         """
         
@@ -132,10 +132,11 @@ class SimulationTest(unittest.TestCase):
                          5 matches")
         self.assertEqual(u'Time', sim.exist('time')[0], 
                          'Simulation.exist() should ignore case' )
+        self.assertEqual([], sim.exist('something that does not exist'))
 
     def test_exist_array(self):
         """
-        tFor a simulation file which uses arrays, Test if :
+        For a simulation file which uses arrays, Test if :
         1) running Simulation.exist() gives a match when it should
            (different cases are tested)
         2) running Simulation.exist() gives a zero list for non-pressent regex
@@ -318,9 +319,38 @@ class SimdexTest(unittest.TestCase):
         
         If yes, this test did NOT succeed, even if you get OK!
         """
-               
+            
+    def test_init_subfolder_with_crappy_files(self):
+       """ Test initiation from a folder including wrong .mat files"""
        
-          
+       folder = path.join(self.cwd, 'SubfolderWithCrappyFiles')
+       simdex = Simdex(folder)
+       self.assertEqual(self.filenames, simdex.get_filenames())
+       
+    def test_exist(self):
+        """
+        Test if :
+        1) running Simdex.exist() gives a match when it should
+           (different cases are tested)
+        2) running Simdex.exist() gives a zero list for non-present regex
+        
+        """
+        
+        simdex = Simdex()
+        self.assertEqual(simdex.parameters[-1], 
+                         simdex.exist(simdex.parameters[-1])[0][0], 
+                         'Simdex.exist() does NOT return a present name')
+        self.assertEqual(1, len(simdex.exist('c1')[0]), 
+                         "sim.exist('c1') should return 1 parameter")
+        self.assertEqual(1, len(simdex.exist('c1', 'par')), 
+                         "sim.exist('c1', 'par') should return 1 parameter")                 
+        self.assertEqual(4, len(simdex.exist('c1')[1]), 
+                         "sim.exist('c1') should return 4 variables")
+        self.assertEqual(4, len(simdex.exist('c1', 'var')), 
+                         "sim.exist('c1', 'var') should return 4 variables")                 
+        self.assertEqual(u'Time', simdex.exist('time')[1][0], 
+                         'Simulation.exist() should ignore case' )
+        self.assertEqual([[],[]], simdex.exist('this does not exist'))
        
        
 #if __name__ == '__main__':
@@ -330,5 +360,5 @@ suite1 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 alltests = unittest.TestSuite([suite1, suite2])
 
-unittest.TextTestRunner(verbosity=-1).run(alltests)
+unittest.TextTestRunner(verbosity=1).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
