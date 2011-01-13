@@ -354,6 +354,7 @@ class SimdexTest(unittest.TestCase):
         
     def test_filter(self):
         """
+        dummy docstring
         """
         pass
        
