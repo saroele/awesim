@@ -253,6 +253,11 @@ class Simulation:
         regular expression in self.names.
         It returns a list with all matching names from self.names
         
+        Attention: if you want to check if eg.  c[3].T exists, you have to 
+        escape the [ and ] with a backlslash, like this:
+        self.exist('c\[3\].T). Otherwise c3.T is sought for. This is 
+        because in regex syntax, [] is used to indicate a set of characters.
+                
         """
         
         p = re.compile(regex, re.IGNORECASE)
@@ -525,41 +530,55 @@ class Simdex:
     
     
     
-    def exist(self, regex, type = 'all'): 
+    def exist(self, regex, tp = 'all'): 
         '''
-        exist(regex, type='all') 
+        exist(regex, tp='all') 
         
         regex = regular expression
-        type = 'all' (default), 'par' or 'var'
+        tp = 'all' (default), 'par' or 'var'
         
         This function checks if a variable name exists in the index.
         In all cases, it returns a list.
-        If type = 'all' this list contains 2 lists of strings: 
+        If tp = 'all' this list contains 2 lists of strings: 
             the first with all parameters that satisfy the regex, 
             the second with variables that satisfy regex
-        If type = 'par' or 'var' the return list only contains 
+        If tp = 'par' or 'var' the return list only contains 
         the corresponding list.
+        
+        Attention: if you want to check if eg.  c[3].T exists, you have to 
+        escape the [ and ] with a backlslash, like this:
+        self.exist('c\[3\].T). Otherwise c3.T is sought for. This is 
+        because in regex syntax, [] is used to indicate a set of characters.
         '''
         
-        result = []
+        
         p = re.compile(regex, re.IGNORECASE)
-        if type == 'all' or type == 'par':
+        if tp == 'all' or tp == 'par':
             # we search for parameters
             matchespar = []
             for i in range(0, len(self.parameters)):
                 m = p.search(self.parameters[i])
                 if m:
                     matchespar.append(self.parameters[i])
-            result.append(matchespar)
             
-        if type == 'all' or type == 'var':
+            
+        if tp == 'all' or tp == 'var':
             # we search for variables
             matchesvar = []
             for i in range(0, len(self.variables)):
                 m = p.search(self.variables[i])
                 if m:
                     matchesvar.append(self.variables[i])
-            result.append(matchesvar)
+          
+        if tp == 'all':
+            result = [matchespar, matchesvar]
+        elif tp == 'par':
+            result = matchespar
+        elif tp == 'var':
+            result = matchesvar
+        else:
+            print 'wrong input for tp'
+            raise ValueError
 
         return result
     
