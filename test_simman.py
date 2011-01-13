@@ -303,9 +303,24 @@ class SimdexTest(unittest.TestCase):
        """ Test initiation with a large .mat file"""
        
        folder = path.join(self.cwd, 'SubfolderForArray_Big')
-       simdex = Simdex(folder)
-       self.assertEqual(path.join(folder, 'Array_Big.mat'), 
-                        simdex.get_filenames('path')[0])   
+       
+       try:
+            simdex = Simdex(folder)
+            self.assertEqual(path.join(folder, 'Array_Big.mat'), 
+                             simdex.get_filenames('path')[0])
+       except IOError:
+            print """
+            
+        !!!!!!!!!!!!!!!!!!!!  PAY ATTENTION !!!!!!!!!!!!!!!!!!!!
+        
+        Check if Array_Big.mat' is present in folder 
+        'SubfolderForArray_Big' of your work directory"
+        
+        If yes, this test did NOT succeed, even if you get OK!
+        """
+               
+       
+          
        
        
 #if __name__ == '__main__':
@@ -315,5 +330,5 @@ suite1 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 alltests = unittest.TestSuite([suite1, suite2])
 
-unittest.TextTestRunner(verbosity=1).run(alltests)
+unittest.TextTestRunner(verbosity=-1).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
