@@ -411,7 +411,7 @@ class Simdex:
         # Convert to full path filenames to avoid confusion
         full_path_filenames = []
         for i in range(len(filenames)):
-            full_path_filenames.append(folder + '\\' + filenames[i])
+            full_path_filenames.append(os.path.join(folder,filenames[i]))
         
         # index is the pointer to the current file in full_path_filenames
         index = -1
