@@ -297,8 +297,6 @@ class SimdexTest(unittest.TestCase):
        
        folder = path.join(self.cwd, 'A Subfolder with Spaces')
        simdex = Simdex(folder)
-       for x, y in zip(self.filenames, simdex.get_filenames()):
-           print '%s = %s' % (x,y)
        self.assertEqual(self.filenames, simdex.get_filenames())
        
     def test_init_array_big(self):
@@ -310,18 +308,6 @@ class SimdexTest(unittest.TestCase):
                         simdex.get_filenames('path')[0])   
        
        
-       
-       print """
-        bon, nu moeten er nog een hele boel testen geschreven worden, maar dat
-        zou redelijk snel moeten gaan.  Wat moet uit m'n hoofd:
-            - deze
-            - test_init_subfolder_with_spaces
-            - test_init_ArrayBig
-            - test_init_subfolder with crappy files (enkel deze mogen doorkomen)
-            - en dan de andere methodes he!!
-            
-            
-        """
 #if __name__ == '__main__':
 #    unittest.main()
 
