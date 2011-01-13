@@ -360,6 +360,29 @@ class SimdexTest(unittest.TestCase):
                          'Simulation.exist() should ignore case' )
         self.assertEqual([[],[]], simdex.exist('this does not exist'))
         
+    def test_cleanup(self):
+        """Test for pars and vars"""
+        simdex = Simdex()
+        n = 4
+        # set 1 value in the parametermap to 0
+        par = simdex.parameters[n]
+        npars = len(simdex.parameters)
+        nvars = len(simdex.variables)
+        simdex.parametermap[n, 1] = 0
+        simdex.cleanup()
+        self.assertEqual(npars-1, len(simdex.parameters))
+        self.assertEqual(npars-1, simdex.parametermap.shape[0])
+        self.assertEqual(npars-1, simdex.parametervalues.shape[0])
+        self.assertEqual(nvars, len(simdex.variables))
+        simdex.variablemap[n, 1] = 0
+        simdex.cleanup()
+        self.assertEqual(nvars-1, len(simdex.variables))
+        self.assertEqual(nvars-1, simdex.variablemap.shape[0])
+        self.assertEqual(npars-1, simdex.parametervalues.shape[0])
+    
+    
+    
+    
     def test_filter(self):
         """
         dummy docstring
