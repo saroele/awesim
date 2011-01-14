@@ -857,7 +857,7 @@ class Simdex:
         # we create a new simdex object, with identical properties as self
         # but containing only the simulations we have selected
         
-        newsimdex = copy.copy(self)
+        newsimdex = copy.deepcopy(self)
         newsimdex.simulations = \
             [x for (x, y) in zip(self.simulations, satisfying) if y == True]
         newsimdex.parametermap = self.parametermap[:, satisfying]
