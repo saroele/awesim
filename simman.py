@@ -407,7 +407,11 @@ class Simdex:
             folder = os.getcwd()
         
         # here we get a list with all files in 'folder' that end with .mat
-        filenames = self.__get_files(folder, '.mat')
+        
+        if os.path.exists(folder):
+            filenames = self.__get_files(folder, '.mat')
+        else:
+            raise IOError('folder does not exist')
         
         # Convert to full path filenames to avoid confusion
         full_path_filenames = []
