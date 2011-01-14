@@ -361,7 +361,13 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual([[],[]], simdex.exist('this does not exist'))
         
     def test_cleanup(self):
-        """Test for pars and vars"""
+        """
+        Test cleanup for pars and vars separately
+        I had trouble with checking if the right par and right var is removed
+        therefore I only control the sizes of attributes and suppose the 
+        right one is gone
+                
+        """
         simdex = Simdex()
         n = 4
         # set 1 value in the parametermap to 0
@@ -380,6 +386,16 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(nvars-1, simdex.variablemap.shape[0])
         self.assertEqual(npars-1, simdex.parametervalues.shape[0])
     
+    def test_get_simID(self):
+        """
+        check if Simdex.get_simID() returns correct simID
+        maybe this is not really an important check
+        
+        """
+        
+        
+        
+        
     
     
     
