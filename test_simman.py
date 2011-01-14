@@ -10,7 +10,8 @@ Created on Thu Jan 06 20:46:26 2011
 import numpy as np
 import unittest
 from os import getcwd, path
-
+from cStringIO import StringIO
+import sys
 from simman import Simulation, Simdex
 
 class SimulationTest(unittest.TestCase):
@@ -254,6 +255,15 @@ class SimdexTest(unittest.TestCase):
     """
 
     def setUp(self):
+      
+        # The next N times, that a question is being asked interactively,
+        # we will automatically answer y.
+        # 
+        # It doesn't matter if N exceeds the numer of questions
+        # NOTE: this may affect interactive debugging tools
+        N = 1000
+        f=StringIO("y\n" * N)
+        sys.stdin = f
         
         self.cwd = getcwd()
         # sims contains the simualations we expect to be in simdex in the 
@@ -393,10 +403,7 @@ class SimdexTest(unittest.TestCase):
         
         """
         
-        
-        
-        
-    
+
     
     
     def test_filter(self):
@@ -415,3 +422,6 @@ alltests = unittest.TestSuite([suite1, suite2])
 
 unittest.TextTestRunner(verbosity=1).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
+
+# Restore back interactivity of keyboard
+sys.stdin = sys.__stdin__
