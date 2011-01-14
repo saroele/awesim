@@ -97,6 +97,7 @@ import scipy.io
 import re
 import copy
 import matplotlib.pyplot as plt
+import cPickle as pickle
 #from enthought.traits.api import *
 #from enthought.traits.ui.api import *
 
@@ -986,3 +987,30 @@ class Simdex:
         for i, sim in zip(simids, matches):
             print i, '   ', sim
         return simids
+        
+    def save(self, filename):
+        """
+        save(filename)
+        
+        Save the Simdex object by pickling it with cPickle
+        
+        
+        To unpickle (= load) use the following command:
+            objectname = pickle.load(open(filename,'rb'))
+            # 'rb' stands for 'read, binary'
+            
+        """
+   
+
+        f = file(filename,'wb')
+        # wb stands for 'write, binary'
+        pickle.dump(self, f, protocol = 1)
+        f.close()
+        
+        return filename + ' created'
+        
+def load_simdex(filename):
+    """load and return a previously saved Simdex object"""
+    
+    result = pickle.load(open(filename,'rb'))
+    return result
