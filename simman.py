@@ -938,6 +938,9 @@ class Simdex:
             zip(self.simulations, self.variablemap[varindex,:]) if y == 1]
         simulations.insert(0,'')
         
+        if len(simulations) < len(self.simulations):
+            raise ValueError('Some simulations did NOT have this variable')
+        
         # 3. and 4.
         plotstring = ''
         plotlegend = ''
