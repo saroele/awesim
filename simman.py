@@ -771,11 +771,14 @@ class Simdex:
         filter(pardic)
         
         pardic is a dictionary of parameter:value pairs
-        if a value is omitted (empty string), all simulations that have any 
+        If a value is omitted (empty string), all simulations that have any 
         value for this parameter are fine
         
         Get all simulations that satisfy pardic (AND relation) and 
         return them as a new Simdex object
+        
+        Attention: a tolerance is defined internally in this method to enable
+        filtering with floats.  The tolerance is currently set to 0.5% 
         '''
         
         # Approach: first find the parameters from pardic in self.parameters
@@ -786,13 +789,14 @@ class Simdex:
         # I select the rows by creating another array with the row numbers
         # and slice self.parametermap and self.parametervalues with that array
         
+        tolerance = 0.005        
         rows = []
         values = []
         for i in pardic:
             rows.append(self.parameters.index(i))
             values.append(pardic[i])
         
-        
+        values = np.array(values)
         arows = np.array(rows)
         reduced_par_map = self.parametermap[arows]
         reduced_par_val = self.parametervalues[arows]
@@ -828,7 +832,11 @@ class Simdex:
         if len(parvalrows) > 0:
             selval = reduced_par_val[parvalrows]
             values = values[parvalrows]
-            satisfyingval = np.all(selval == values, axis = 0)
+            # we do not compare the values directly, but allow deviations 
+            # smaller than tolerance.  
+            abs_diff_values = np.abs(selval - values)
+            satisfyingval = np.all(abs_diff_values < (tolerance * values), 
+                                   axis = 0)
             # again a boolean array
         else:
             # satisfyingval has to be known.  
@@ -858,6 +866,8 @@ class Simdex:
         
         # Removing unused parameters and variables from the filtered simdex
         newsimdex.cleanup()
+        if newsimdex.get_filenames() == []:
+            raise ValueError("No single simulation could satisfy this filter")
         
         print newsimdex
 
