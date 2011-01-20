@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Test module for the simman module
-Always run this module to check the code of symman.py
 
 Created on Thu Jan 06 20:46:26 2011
 
