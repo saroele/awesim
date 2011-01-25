@@ -969,6 +969,63 @@ class Simdex:
         
         return [fig, lines, leg]
 
+    def scatterplot(self, variable_X, variable_Y):
+        '''
+        scatterplot(variables) - variable = string with exact variable name
+        
+        Creates a matplotlib figure with a simple plot of the first timeseries for 
+        each of the simulations in self at the X-axis, and the second at the Y-axis
+        '''
+        
+        # structure of this method:
+#            1. find variable name in self.variablemap
+#            2. select the simulations that HAVE this variable
+#            3. for each of those simulations, create a Simulation object sim
+#            4. use get_value on sim to get all the values
+#            5. create a plotstring to plot
+
+            
+        # 1. and 2.
+        varindex_X = self.variables.index(variable_X)
+        simulations_X = [x for (x, y) in \
+            zip(self.simulations, self.variablemap[varindex_X,:]) if y == 1]
+        simulations_X.insert(0,'')
+
+        varindex_Y = self.variables.index(variable_Y)
+        simulations_Y = [x for (x, y) in \
+            zip(self.simulations, self.variablemap[varindex_Y,:]) if y == 1]
+        simulations_Y.insert(0,'')
+        
+        if len(simulations_X) < len(self.simulations):
+            raise ValueError('Some simulations did NOT have this variable')
+        
+        if len(simulations_Y) < len(self.simulations):
+            raise ValueError('Some simulations did NOT have this variable')
+        
+        # 3. and 4.
+        plotstring = ''
+        plotlegend = ''
+        
+        for s in range(1, len(simulations_X)):
+            sim_X = Simulation(simulations_X[s])
+            stringske_X = 'simIDX_' + str(s) + "=sim_X.get_value('" + variable_X + "')"
+            exec(stringske_X)
+            for t in range(1, len(simulations_Y)):
+                sim_Y = Simulation(simulations_Y[t])
+                stringske_Y = 'simIDY_' + str(t) + "=sim_Y.get_value('" + variable_Y + "')"            
+                exec(stringske_Y)
+                plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(t) + ','
+                plotlegend += "'simIDY_" + str(s) + "',"
+        
+        plotstring = plotstring[:-1]
+        plotlegend = plotlegend[:-1]
+        
+        fig = plt.figure()
+        exec("lines = plt.plot(" + plotstring + ",'o')")
+        exec("leg = plt.legend((" + plotlegend + "))")
+        
+        return [fig, lines, leg]
+
     
     def get_simID(self, regex):
         '''
