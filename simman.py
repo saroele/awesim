@@ -83,8 +83,10 @@ Most important methods (* = implemented):
     - get_values(var or par): get an array with the values of the variable or
       parameter for each of the simulations in the simdex
     * get_parameter(par): to be merged in get_values!!
-    - save(filename): saves the simdex by pickling (cPickle) to filename.  The 
-      simdex can be loaded later on with the function load_simdex(filename)
+    * save(filename): saves the simdex by pickling (cPickle) to filename.  The 
+      simdex can be loaded later on with the function load_simdex(filename). 
+      This is no method of the class Simdex, so to be imported separately from
+      this module
       
 This info AND more details can be found in the docstrings of each of these
 classes, functions and methods
@@ -381,10 +383,8 @@ class Simdex:
     Important CONVENTIONS:
         - we make a distinction between parameters (one single value)
           and variables (a timeseries of values)
-        - simulation 'id' is integer starting from 1, not 0
-        - this means that the first column of parametermap and parametervalues
-          contains only zeros
-    
+        - simulation 'id' is integer starting from 0 (changed since 30/01/2011)
+            
     Possible IMPROVEMENTS:
     - multi folder file search
     - support multiple filter (well, it's possible, but the filtersets will 
@@ -399,7 +399,7 @@ class Simdex:
         If folders = '', the current work directory is indexed.
         '''
         # First, initialise some  attributes
-        self.simulations = [''] #simulations[0] is not used!
+        self.simulations = []
         self.filterset = dict()
 
         if folder == '' :
@@ -457,16 +457,14 @@ class Simdex:
         self.parameters = sim.parameters # a LIST
         self.variables = sim.variables  # a LIST
         self.simulations.append(sim.filename)
-        self.parametermap = np.ndarray((len(self.parameters), 2))
-        self.parametermap[:, 0] = 0
-        self.parametermap[:, 1] = 1
+        self.parametermap = np.ndarray((len(self.parameters), 1))
+        self.parametermap[:, 0] = 1
         self.parametervalues = copy.copy(self.parametermap)
-        self.parametervalues[:, 1] = np.array(sim.parametervalues)
+        self.parametervalues[:, 0] = np.array(sim.parametervalues)
         
-        self.variablemap = np.ndarray((len(self.variables), 2))
-        self.variablemap[:, 0] = 0
-        self.variablemap[:, 1] = 1
-        
+        self.variablemap = np.ndarray((len(self.variables), 1))
+        self.variablemap[:, 0] = 1
+                
         # The first simulation file is indexed and the attributes are 
         # initialised.  
         
@@ -508,25 +506,24 @@ class Simdex:
         with their simID's
         '''
         print '\nsimID', 'Filename\n'
-        for i in range(1, len(self.simulations)):
+        for i in range(len(self.simulations)):
             print i, '   ', self.simulations[i]
         return ''
             
     def get_filenames(self, form='filename'):
         """
         get_filenames(format='rel')
-        Returns a list of the filenames (like self.simulations but without the 
-        empty string in the beginning).
+        Returns a list of the filenames (like self.simulations).
         
         form = 'filename' (default): only the filenames
         form = 'path' : full path name
         """
         
-        simulations = self.simulations[1:]
+        
         if form == 'path':
-            result = simulations
+            result = self.simulations
         elif form == 'filename':
-            result = [os.path.split(x)[1] for x in simulations]
+            result = [os.path.split(x)[1] for x in self.simulations]
         else:
             print 'form is not recognised'
             raise ValueError
@@ -561,7 +558,7 @@ class Simdex:
         if tp == 'all' or tp == 'par':
             # we search for parameters
             matchespar = []
-            for i in range(0, len(self.parameters)):
+            for i in range(len(self.parameters)):
                 m = p.search(self.parameters[i])
                 if m:
                     matchespar.append(self.parameters[i])
@@ -570,7 +567,7 @@ class Simdex:
         if tp == 'all' or tp == 'var':
             # we search for variables
             matchesvar = []
-            for i in range(0, len(self.variables)):
+            for i in range(len(self.variables)):
                 m = p.search(self.variables[i])
                 if m:
                     matchesvar.append(self.variables[i])
@@ -641,8 +638,7 @@ class Simdex:
                 # the next part is only executed if partofind is found 
                 parmap[i] = 1
                 parvalues[i] = simulation.parametervalues[position]
-#                print i, partofind, simulation.parametervalues[position]
-                # in newparameters we put a 0 if we already indexed a parameter
+                # in newparameters we put 0 if we already indexed the parameter
                 newpars[position] = 0
                 
             except(ValueError):
@@ -659,8 +655,6 @@ class Simdex:
         if len(newparameters) > 0:
             # There ARE new parameters, update the attributes
             # self.parameters
-#            print 'newparameters:',newparameters
-            # There ARE new parameterse, update the attributes
             self.parameters.extend(newparameters)
             
             # self.parametermap
@@ -672,7 +666,6 @@ class Simdex:
             newparcolumn.resize(len(parmap) + len(newparameters), 1)
             self.parametermap = np.append(self.parametermap, 
                                           newparcolumn, axis = 1)
-            # print 'slang', self.parametermap.shape, '\n' 
             
             # self.parametervalues
             self.parametervalues = np.append(self.parametervalues, 
@@ -742,16 +735,15 @@ class Simdex:
         # Approache: copy self and remove the unneeded columns from 
         # parametermap, parametervalues and variablemap by slicing
         
-        newsimdex = copy.copy(self)
-        newsimdex.simulations = ['']
+        newsimdex = copy.deepcopy(self)
+        newsimdex.simulations = []
         
         parmap = self.parametermap[:, simID]
         varmap = self.variablemap[:, simID]
         
-        sims_to_keep = [True]
-        # First value in sims_to_keep is for the dummy columns
-
-        for i in range(1, len(self.simulations)):
+        sims_to_keep = []
+        
+        for i in range(len(self.simulations)):
             if np.all(self.parametermap[:, i] == parmap) and \
                 np.all(self.variablemap[:, i] == varmap):
                 # we have catched an identical simulation
@@ -795,8 +787,9 @@ class Simdex:
         # and slice self.parametermap and self.parametervalues with that array
         
         tolerance = 0.005        
+        # list of rownumbers from self.parameters with concerned parameters
         rows = []
-        values = []
+        values = []    
         for i in pardic:
             rows.append(self.parameters.index(i))
             values.append(pardic[i])
@@ -852,8 +845,7 @@ class Simdex:
         # only simulations satisfying both the requirements are selected
         # first (dummy) row of self.simulations has also to be kept
         satisfying = satisfyingmap & satisfyingval
-        satisfying[0] = True
-        
+                
         # we create a new simdex object, with identical properties as self
         # but containing only the simulations we have selected
         
@@ -916,7 +908,7 @@ class Simdex:
         # take care, first element is dummy value (zero)
         
         print '\nsimID', parameter, 'Filename\n'
-        for i in range(1, len(self.simulations)):
+        for i in range(len(self.simulations)):
             print i, '   ', result[i], '  ', self.simulations[i]
         
         return result
@@ -941,8 +933,7 @@ class Simdex:
         varindex = self.variables.index(variable)
         simulations = [x for (x, y) in \
             zip(self.simulations, self.variablemap[varindex,:]) if y == 1]
-        simulations.insert(0,'')
-        
+                
         if len(simulations) < len(self.simulations):
             raise ValueError('Some simulations did NOT have this variable')
         
@@ -950,9 +941,9 @@ class Simdex:
         plotstring = ''
         plotlegend = ''
         
-        for s in range(1, len(simulations)):
+        for s in range(len(simulations)):
             sim = Simulation(simulations[s])
-            if s == 1:
+            if s == 0:
                 #only once: get time
                 time = sim.get_value('Time')
             stringske = 'simID_' + str(s) + "=sim.get_value('" + variable + "')"
@@ -994,8 +985,7 @@ class Simdex:
         simulations = [x for (x, y, z) in \
             zip(self.simulations, self.variablemap[varindex_X,:], 
                 self.variablemap[varindex_Y,:]) if y == 1 and z == 1]
-        simulations.insert(0,'')
-
+       
         if len(simulations) < len(self.simulations):
             raise ValueError('Some simulations did NOT have \
                 one of these variables')
@@ -1004,11 +994,13 @@ class Simdex:
         plotstring = ''
         plotlegend = ''
         
-        for s in range(1, len(simulations)):
+        for s in range(len(simulations)):
             sim = Simulation(simulations[s])
-            stringske_X = 'simIDX_' + str(s) + "=sim.get_value('" + variable_X + "')"
+            stringske_X = 'simIDX_' + str(s) + \
+                          "=sim.get_value('" + variable_X + "')"
             exec(stringske_X)
-            stringske_Y = 'simIDY_' + str(s) + "=sim.get_value('" + variable_Y + "')"            
+            stringske_Y = 'simIDY_' + str(s) + \
+                          "=sim.get_value('" + variable_Y + "')"            
             exec(stringske_Y)
             plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(s) + ','
             plotlegend += "'simID_" + str(s) + "',"
@@ -1024,7 +1016,6 @@ class Simdex:
         ax.set_xlabel(variable_X)
         ax.set_ylabel(variable_Y)
         
-        
         return [fig, lines, leg]
 
     
@@ -1039,7 +1030,7 @@ class Simdex:
         p = re.compile(regex, re.IGNORECASE)
         matches = []
         simids = []
-        for i in range(0, len(self.simulations)):
+        for i in range(len(self.simulations)):
             m = p.search(self.simulations[i])
             if m:
                 matches.append(self.simulations[i])

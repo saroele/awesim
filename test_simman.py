@@ -270,7 +270,7 @@ class SimdexTest(unittest.TestCase):
         self.cwd = getcwd()
         # sims contains the simualations we expect to be in simdex in the 
         # current work directory        
-        self.sims = ['']
+        self.sims = []
         self.filenames = ['Array.mat', 'LinkedCapacities.mat', \
                    'LinkedCapacities_A.mat',  'LinkedCapacities_B.mat', \
                    'LinkedCapacities_C.mat', 'LinkedCapacities_D.mat', \
@@ -301,7 +301,7 @@ class SimdexTest(unittest.TestCase):
         simdex = Simdex()
         filenames = simdex.get_filenames('path')
         filenames.sort()
-        self.assertEqual(self.sims[1:], filenames)
+        self.assertEqual(self.sims, filenames)
         
         
     def test_init_subfolder(self):
@@ -390,13 +390,13 @@ class SimdexTest(unittest.TestCase):
         par = simdex.parameters[n]
         npars = len(simdex.parameters)
         nvars = len(simdex.variables)
-        simdex.parametermap[n, 1] = 0
+        simdex.parametermap[n, 0] = 0
         simdex.cleanup()
         self.assertEqual(npars-1, len(simdex.parameters))
         self.assertEqual(npars-1, simdex.parametermap.shape[0])
         self.assertEqual(npars-1, simdex.parametervalues.shape[0])
         self.assertEqual(nvars, len(simdex.variables))
-        simdex.variablemap[n, 1] = 0
+        simdex.variablemap[n, 0] = 0
         simdex.cleanup()
         self.assertEqual(nvars-1, len(simdex.variables))
         self.assertEqual(nvars-1, simdex.variablemap.shape[0])
@@ -492,7 +492,7 @@ class SimdexTest(unittest.TestCase):
         simdex = Simdex()
         c1_C = simdex.get_parameters('c1.C')
         c1_C.sort()
-        exp_result_sorted = np.array([    0.,     0.,   600.,   600.,   800.,  
+        exp_result_sorted = np.array([   0.,   600.,   600.,   800.,  
                                       800.,   800.,   800., 1000.])
         self.assertTrue((exp_result_sorted == c1_C).all())
     
