@@ -264,7 +264,7 @@ class SimdexTest(unittest.TestCase):
         # It doesn't matter if N exceeds the numer of questions
         # NOTE: this may affect interactive debugging tools
         N = 1000
-        f=StringIO("y\n" * N)
+        f = StringIO("y\n" * N)
         sys.stdin = f
         
         self.cwd = getcwd()
@@ -279,6 +279,10 @@ class SimdexTest(unittest.TestCase):
         for fn in self.filenames:
             self.sims.append(path.join(self.cwd, fn))
                        
+    def tearDown(self):
+        """ Restore back interactivity of keyboard """
+        sys.stdin = sys.__stdin__
+    
     
     def test_init(self):
         """
