@@ -588,7 +588,7 @@ class SimdexTest(unittest.TestCase):
                          'After filtering, filterset has to be updated')
     
     def test_plot(self):
-        """Simdex.plot() should return [fig, lines, plot]"""
+        """Simdex.plot() should return [fig, lines, leg]"""
         
         simdex = Simdex()
         simdex_filtered = simdex.filter({'c1.C': ''})
@@ -620,6 +620,18 @@ class SimdexTest(unittest.TestCase):
             else: 
                 self.assertEqual(s, l)
     
+    def test_scatterplot(self):
+        """Simdex.scatterplot() should return [fig, lines, leg]"""
+        
+        simdex = Simdex()
+        simdex_filtered = simdex.filter({'c1.C': ''})
+        [fig, lines, leg] = simdex_filtered.scatterplot('c1.T', 'c2.T')
+        self.assertTrue(isinstance(fig, matplotlib.figure.Figure))
+        self.assertEqual(7, len(lines))
+        for line in lines:
+            self.assertTrue(isinstance(line, matplotlib.lines.Line2D))
+        self.assertTrue(isinstance(leg, matplotlib.legend.Legend))    
+        
         
         
 #if __name__ == '__main__':
@@ -632,5 +644,3 @@ alltests = unittest.TestSuite([suite1, suite2])
 unittest.TextTestRunner(verbosity=1).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
 
-# Restore back interactivity of keyboard
-sys.stdin = sys.__stdin__

@@ -990,42 +990,40 @@ class Simdex:
             
         # 1. and 2.
         varindex_X = self.variables.index(variable_X)
-        simulations_X = [x for (x, y) in \
-            zip(self.simulations, self.variablemap[varindex_X,:]) if y == 1]
-        simulations_X.insert(0,'')
-
         varindex_Y = self.variables.index(variable_Y)
-        simulations_Y = [x for (x, y) in \
-            zip(self.simulations, self.variablemap[varindex_Y,:]) if y == 1]
-        simulations_Y.insert(0,'')
-        
-        if len(simulations_X) < len(self.simulations):
-            raise ValueError('Some simulations did NOT have this variable')
-        
-        if len(simulations_Y) < len(self.simulations):
-            raise ValueError('Some simulations did NOT have this variable')
+        simulations = [x for (x, y, z) in \
+            zip(self.simulations, self.variablemap[varindex_X,:], 
+                self.variablemap[varindex_Y,:]) if y == 1 and z == 1]
+        simulations.insert(0,'')
+
+        if len(simulations) < len(self.simulations):
+            raise ValueError('Some simulations did NOT have \
+                one of these variables')
         
         # 3. and 4.
         plotstring = ''
         plotlegend = ''
         
-        for s in range(1, len(simulations_X)):
-            sim_X = Simulation(simulations_X[s])
-            stringske_X = 'simIDX_' + str(s) + "=sim_X.get_value('" + variable_X + "')"
+        for s in range(1, len(simulations)):
+            sim = Simulation(simulations[s])
+            stringske_X = 'simIDX_' + str(s) + "=sim.get_value('" + variable_X + "')"
             exec(stringske_X)
-            for t in range(1, len(simulations_Y)):
-                sim_Y = Simulation(simulations_Y[t])
-                stringske_Y = 'simIDY_' + str(t) + "=sim_Y.get_value('" + variable_Y + "')"            
-                exec(stringske_Y)
-                plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(t) + ','
-                plotlegend += "'simIDY_" + str(s) + "',"
+            stringske_Y = 'simIDY_' + str(s) + "=sim.get_value('" + variable_Y + "')"            
+            exec(stringske_Y)
+            plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(s) + ','
+            plotlegend += "'simID_" + str(s) + "',"
         
         plotstring = plotstring[:-1]
         plotlegend = plotlegend[:-1]
         
         fig = plt.figure()
-        exec("lines = plt.plot(" + plotstring + ",'o')")
-        exec("leg = plt.legend((" + plotlegend + "))")
+        ax = fig.add_subplot(111)
+        exec("lines = ax.plot(" + plotstring + ")")
+        exec("leg = ax.legend((" + plotlegend + "))")
+        
+        ax.set_xlabel(variable_X)
+        ax.set_ylabel(variable_Y)
+        
         
         return [fig, lines, leg]
 
