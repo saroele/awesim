@@ -964,8 +964,11 @@ class Simdex:
         plotlegend = plotlegend[:-1]
         
         fig = plt.figure()
-        exec("lines = plt.plot(" + plotstring + ")")
-        exec("leg = plt.legend((" + plotlegend + "))")
+        ax = fig.add_subplot(111)
+        exec("lines = ax.plot(" + plotstring + ")")
+        exec("leg = ax.legend((" + plotlegend + "))")
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel(variable)
         
         return [fig, lines, leg]
 
