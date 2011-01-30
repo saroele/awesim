@@ -632,6 +632,10 @@ class SimdexTest(unittest.TestCase):
             self.assertTrue(isinstance(line, matplotlib.lines.Line2D))
         self.assertTrue(isinstance(leg, matplotlib.legend.Legend))    
         
+    def test_remove(self):
+        """ pretty straightforward, no test if no bugs are found"""
+        pass
+        
         
         
 #if __name__ == '__main__':

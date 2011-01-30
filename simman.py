@@ -65,7 +65,7 @@ Most important methods (* = implemented):
       folders. Checks if the found files are already in simulations, else they 
       are added and their parameters and ALL attributes are updated with the 
       info found in the new files
-    - remove(sim_id): remove a simulation from the simdex
+    * remove(sim_id): remove a simulation from the simdex
     * print(): gives a nice overview of the indexed simulations 
     * filter(dictionary): this method takes as input a dictionary with parameter
       name/value pairs.   It returns a new Simdex object with those simulations
@@ -1041,6 +1041,39 @@ class Simdex:
             print i, '   ', sim
         return simids
         
+    def remove(self, list_simIDs):
+        """
+        remove(list_simIDs)
+        
+        Remove all listed sims from the simdex.  If only 1 sim has to be removed
+        it can also be an integer instead of a list
+        """
+        
+        if isinstance(list_simIDs, int):
+            list_to_remove = [list_simIDs]
+        else:
+            list_to_remove = list_simIDs
+        
+        # make an array to slice with 
+        sims_to_keep = [True for x in self.simulations]        
+        for simID in list_to_remove:
+            sims_to_keep[simID] = False
+        
+        newsimdex = copy.deepcopy(self)
+        
+        s = np.array(sims_to_keep)
+        newsimdex.simulations = [x for (x,y) in zip(self.simulations, s) \
+                                    if y == True]
+        newsimdex.parametermap = newsimdex.parametermap[ : , s]
+        newsimdex.parametervalues = newsimdex.parametervalues[ : , s]
+        newsimdex.variablemap = newsimdex.variablemap[ : , s]
+        
+        # remove all empty rows and corresponding parameters/variables
+        newsimdex.cleanup()
+        
+        return newsimdex
+    
+    
     def save(self, filename):
         """
         save(filename)
