@@ -299,6 +299,7 @@ class SimdexTest(unittest.TestCase):
       
         """
         simdex = Simdex()
+        simdex.scan()
         filenames = simdex.get_filenames('path')
         filenames.sort()
         self.assertEqual(self.sims, filenames)
@@ -361,6 +362,7 @@ class SimdexTest(unittest.TestCase):
         """
         
         simdex = Simdex()
+        simdex.scan()
         self.assertEqual(simdex.parameters[-1], 
                          simdex.exist(simdex.parameters[-1])[0][0], 
                          'Simdex.exist() does NOT return a present name')
@@ -385,6 +387,7 @@ class SimdexTest(unittest.TestCase):
                 
         """
         simdex = Simdex()
+        simdex.scan()
         n = 4
         # set 1 value in the parametermap to 0
         par = simdex.parameters[n]
@@ -415,6 +418,7 @@ class SimdexTest(unittest.TestCase):
         """ Simdex.get_identical() for Array.mat should return only Array.mat"""
         
         simdex = Simdex()
+        simdex.scan()
         simID_array = simdex.get_simID('array')
         simdex_array = simdex.get_identical(simID_array[0])
         self.assertEqual(['Array.mat'], simdex_array.get_filenames(), 
@@ -453,6 +457,7 @@ class SimdexTest(unittest.TestCase):
         """
         
         simdex = Simdex()
+        simdex.scan()
         simID_lc = simdex.get_simID('_C')
         simdex_lc = simdex.get_identical(simID_lc[0])
         exp_results = ['LinkedCapacities.mat', \
@@ -490,6 +495,7 @@ class SimdexTest(unittest.TestCase):
         """Simdex.get_parameters() should return correct values"""
         
         simdex = Simdex()
+        simdex.scan()
         c1_C = simdex.get_parameters('c1.C')
         c1_C.sort()
         exp_result_sorted = np.array([   0.,   600.,   600.,   800.,  
@@ -501,6 +507,7 @@ class SimdexTest(unittest.TestCase):
         """Simdex.filter() with integer values should work well"""
         
         simdex = Simdex()
+        simdex.scan()
         filt_dic = {'c1.C': 800}
         simdex_filtered = simdex.filter(filt_dic)
         simdex_filtered_fn = simdex_filtered.get_filenames()
@@ -520,6 +527,7 @@ class SimdexTest(unittest.TestCase):
         pass
         
         simdex = Simdex()
+        simdex.scan()
         filt_dic = {'c1.C': 850} 
         filt_dic2 = {'c1.C': 800, 'r.R': 800}
         self.assertRaises(ValueError, simdex.filter, filt_dic)
@@ -530,6 +538,7 @@ class SimdexTest(unittest.TestCase):
         that parameter"""
         
         simdex = Simdex()
+        simdex.scan()
         filt_dic = {'c1.C': ''}
         simdex_filtered = simdex.filter(filt_dic)
         simdex_filtered_fn = simdex_filtered.get_filenames()
@@ -548,6 +557,7 @@ class SimdexTest(unittest.TestCase):
     def test_filter_twice(self):
         """ filtering twice should give correct end results and filterset"""
         simdex = Simdex()
+        simdex.scan()
         filt_dic = {'c1.C': 800}
         filt_dic2 = {'r.R': 3}
         simdex_filtered1 = simdex.filter(filt_dic)
@@ -565,6 +575,7 @@ class SimdexTest(unittest.TestCase):
     def test_filter_unchanged_original(self):
         """simdex.filter() should not change simdex (bug and issue on github)"""
         simdex = Simdex()
+        simdex.scan()
         filt_dic = {'c1.C': 800}
         simdex_filtered = simdex.filter(filt_dic)
         
@@ -575,6 +586,7 @@ class SimdexTest(unittest.TestCase):
         """Simdex.filter() with float values should work well"""
         
         simdex = Simdex()
+        simdex.scan()
         filt_dic = {'r.R': 8.15}
         simdex_filtered = simdex.filter(filt_dic)
         simdex_filtered_fn = simdex_filtered.get_filenames()
@@ -591,6 +603,7 @@ class SimdexTest(unittest.TestCase):
         """Simdex.plot() should return [fig, lines, leg]"""
         
         simdex = Simdex()
+        simdex.scan()
         simdex_filtered = simdex.filter({'c1.C': ''})
         [fig, lines, leg] = simdex_filtered.plot('c1.T')
         self.assertTrue(isinstance(fig, matplotlib.figure.Figure))
@@ -603,12 +616,14 @@ class SimdexTest(unittest.TestCase):
         """Simdex.plot() should return ValueError if var not present in every sim"""
         
         simdex = Simdex()
+        simdex.scan()
         self.assertRaises(ValueError, simdex.plot, 'c1.T')
         
     def test_save_and_load(self):
         """Saving and loading a simdex object should return exactly the same object"""
         
         simdex = Simdex()
+        simdex.scan()
         simdex.save('Test_save.dat')
         loaded = load_simdex('Test_save.dat')
         for attr in simdex.__dict__:
@@ -624,6 +639,7 @@ class SimdexTest(unittest.TestCase):
         """Simdex.scatterplot() should return [fig, lines, leg]"""
         
         simdex = Simdex()
+        simdex.scan()
         simdex_filtered = simdex.filter({'c1.C': ''})
         [fig, lines, leg] = simdex_filtered.scatterplot('c1.T', 'c2.T')
         self.assertTrue(isinstance(fig, matplotlib.figure.Figure))

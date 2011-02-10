@@ -355,7 +355,7 @@ class Simdex:
       folders. Checks if the found files are already in simulations, else they 
       are added and their parameters and ALL attributes are updated with the 
       info found in the new files
-    - remove(sim_id): remove a simulation from the simdex
+    * remove(sim_id): remove a simulation from the simdex
     * print(): gives a nice overview of the indexed simulations 
     * filter(dictionary): this method takes as input a dictionary with parameter 
       name/value pairs.   It returns a new Simdex object with those simulations
@@ -395,110 +395,30 @@ class Simdex:
     def __init__(self, folder=''):
         '''
         Creates a Simdex object.  
-        Folders is a single folder to be sought for .mat files
-        If folders = '', the current work directory is indexed.
+        Folder is a single folder to be sought for .mat files
+        If folder = '', the current work directory is indexed.
         '''
         # First, initialise some  attributes
         self.simulations = []
         self.filterset = dict()
 
         if folder == '' :
-            # use current workdirectory if none is stated
-            folder = os.getcwd()
+            # an empty simdex is created
+            self.parameters = []
+            self.variables = []
+            self.parametermap = np.ndarray((0, 1))
+            self.parametervalues = copy.copy(self.parametermap)
+            self.variablemap = np.ndarray((0, 1))
+            
         
         # here we get a list with all files in 'folder' that end with .mat
         
-        if os.path.exists(folder):
-            filenames = self.__get_files(folder, '.mat')
+        elif os.path.exists(folder):
+            self.scan(folder)
         else:
             raise IOError('folder does not exist')
         
-        # Convert to full path filenames to avoid confusion
-        full_path_filenames = []
-        for i in range(len(filenames)):
-            full_path_filenames.append(os.path.join(folder,filenames[i]))
-        
-        # index is the pointer to the current file in full_path_filenames
-        index = -1
-        ########################################################################
-        # Now we take the first .mat file and use this as a basis for our index
-        first_file_indexed = False
-        while first_file_indexed == False:
-            index += 1
-            try:
-                # We try the .mat files one by one until 
-                # we find a first Dymola file
-                sim = Simulation(full_path_filenames[index])
-                first_file_indexed = True
-            except:
-                print '%s is no Dymola file.  It is not indexed' % \
-                    (full_path_filenames[index])
-
-        # Now, check the simulation runtime and confirm with user that it is 
-        # correct.  For the next simulation files, the runtime will be compared
-        # to this one to decide if the file is ok or not. 
-        time = sim.get_value('Time')
-        
-        print 'The first found simulation, %s, runs from %d s till %d s' % \
-            (sim.filename, time[0],time[-1])
-        timeOK = raw_input('Is this correct? y/n : ')
-        print '\n'
-        if timeOK == 'y' or timeOK == 'Y':
-            self.simulationstart = time[0]
-            self.simulationstop = time[-1]
-        else:
-            raise NotImplementedError('In that case, please remove this file \
-                manually so the index can start with a correct file')
-            
-        # The next step is to separate parametes and variables from names and
-        # initiate all attributes
-        
-        sim.separate()
-        self.parameters = sim.parameters # a LIST
-        self.variables = sim.variables  # a LIST
-        self.simulations.append(sim.filename)
-        self.parametermap = np.ndarray((len(self.parameters), 1))
-        self.parametermap[:, 0] = 1
-        self.parametervalues = copy.copy(self.parametermap)
-        self.parametervalues[:, 0] = np.array(sim.parametervalues)
-        
-        self.variablemap = np.ndarray((len(self.variables), 1))
-        self.variablemap[:, 0] = 1
-                
-        # The first simulation file is indexed and the attributes are 
-        # initialised.  
-        
-        ########################################################################
-        # The next step is to index all remaining files
-        
-        index += 1
-        while index < len(full_path_filenames):
-            # We try to index the remaining .mat files one by one 
-            try:
-                sim = Simulation(full_path_filenames[index])
-            
-                # Now, check the simulation runtime against previously confirmed
-                # start and stop times
-                time = sim.get_value('Time')
-                
-                if self.simulationstart == time[0] and \
-                    self.simulationstop == time[-1]:
-                    # index this new simulation 
-                    self.__index_one_sim(sim)
-                    print '%s indexed' % (sim.filename)
-                
-                    # and finally, add the filename of the nicely indexed 
-                    # simulation to the list of indexed simulations
-                    self.simulations.append(sim.filename)
-    
-                else:
-                    print '%s, runs from %d s till %d s, therefore, it is NOT \
-                         indexed' % (sim.filename, time[0],time[-1])
-            
-            except :
-                pass
-
-            index += 1 
+ 
 
     def __str__(self):
         '''
@@ -510,6 +430,147 @@ class Simdex:
             print i, '   ', self.simulations[i]
         return ''
             
+    def scan(self, folder=''):
+        """
+        Scan the folder for .mat files that are simulation results, and 
+        add them to the simdex
+        Folder is a single folder to be sought for .mat files
+        If folder = '', the current work directory is indexed
+        
+        """
+        if folder == '' :
+            filenames = self.__get_files(os.getcwd(), '.mat')
+        elif os.path.exists(folder):
+            filenames = self.__get_files(folder, '.mat')
+        else:
+            raise IOError('folder does not exist')
+            
+        
+        # Convert to full path filenames to avoid confusion
+        full_path_filenames = []
+        for i in range(len(filenames)):
+            full_path_filenames.append(os.path.join(folder,filenames[i]))
+        
+        # run the following loop only when this is the first time files are
+        # being indexed
+        if self.simulations == []:
+            # index is the pointer to the current file in full_path_filenames
+            index = -1
+            ########################################################################
+            # Now we take the first .mat file and use this as a basis for our index
+            first_file_indexed = False
+            while first_file_indexed == False:
+                index += 1
+                try:
+                    # We try the .mat files one by one until 
+                    # we find a first Dymola file
+                    sim = Simulation(full_path_filenames[index])
+                    first_file_indexed = True
+                except:
+                    print '%s is no Dymola file.  It is not indexed' % \
+                        (full_path_filenames[index])
+    
+            # Now, check the simulation runtime and confirm with user that it is 
+            # correct.  For the next simulation files, the runtime will be compared
+            # to this one to decide if the file is ok or not. 
+            time = sim.get_value('Time')
+            
+            print 'The first found simulation, %s, runs from %d s till %d s' % \
+                (sim.filename, time[0],time[-1])
+            timeOK = raw_input('Is this correct? y/n : ')
+            print '\n'
+            if timeOK == 'y' or timeOK == 'Y':
+                self.simulationstart = time[0]
+                self.simulationstop = time[-1]
+            else:
+                raise NotImplementedError('In that case, please remove this file \
+                    manually so the index can start with a correct file')
+                
+            # The next step is to separate parametes and variables from names and
+            # initiate all attributes
+            
+            sim.separate()
+            self.parameters = sim.parameters # a LIST
+            self.variables = sim.variables  # a LIST
+            self.simulations.append(sim.filename)
+            self.parametermap = np.ndarray((len(self.parameters), 1))
+            self.parametermap[:, 0] = 1
+            self.parametervalues = copy.copy(self.parametermap)
+            self.parametervalues[:, 0] = np.array(sim.parametervalues)
+            
+            self.variablemap = np.ndarray((len(self.variables), 1))
+            self.variablemap[:, 0] = 1
+                    
+            # The first simulation file is indexed and the attributes are 
+            # initialised.  
+            
+            ########################################################################
+            # The next step is to index all remaining files
+            
+            index += 1
+            while index < len(full_path_filenames):
+                # We try to index the remaining .mat files one by one 
+                try:
+                    sim = Simulation(full_path_filenames[index])
+                
+                    # Now, check the simulation runtime against previously confirmed
+                    # start and stop times
+                    time = sim.get_value('Time')
+                    
+                    if self.simulationstart == time[0] and \
+                        self.simulationstop == time[-1]:
+                        # index this new simulation 
+                        self.__index_one_sim(sim)
+                        print '%s indexed' % (sim.filename)
+                    
+                        # and finally, add the filename of the nicely indexed 
+                        # simulation to the list of indexed simulations
+                        self.simulations.append(sim.filename)
+        
+                    else:
+                        print '%s, runs from %d s till %d s, therefore, it is NOT \
+                             indexed' % (sim.filename, time[0],time[-1])
+                
+                except :
+                    pass
+    
+                index += 1
+        
+        else:
+            # there are already files in the simdex
+            index = 0
+            while index < len(full_path_filenames):
+                # We try to index the remaining .mat files one by one 
+                try:
+                    sim = Simulation(full_path_filenames[index])
+                
+                    # Now, check the simulation runtime against previously confirmed
+                    # start and stop times
+                    time = sim.get_value('Time')
+                    
+                    if self.simulationstart == time[0] and \
+                        self.simulationstop == time[-1]:
+                        # index this new simulation 
+                        self.__index_one_sim(sim)
+                        print '%s indexed' % (sim.filename)
+                    
+                        # and finally, add the filename of the nicely indexed 
+                        # simulation to the list of indexed simulations
+                        self.simulations.append(sim.filename)
+        
+                    else:
+                        print '%s, runs from %d s till %d s, therefore, it is NOT \
+                             indexed' % (sim.filename, time[0],time[-1])
+                
+                except :
+                    pass
+    
+                index += 1            
+        
+        
+                
+
+
     def get_filenames(self, form='filename'):
         """
         get_filenames(format='rel')
