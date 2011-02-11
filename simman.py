@@ -488,18 +488,8 @@ class Simdex:
             # The next step is to separate parametes and variables from names and
             # initiate all attributes
             
-            sim.separate()
-            self.parameters = sim.parameters # a LIST
-            self.variables = sim.variables  # a LIST
-            self.simulations.append(sim.filename)
-            self.parametermap = np.ndarray((len(self.parameters), 1))
-            self.parametermap[:, 0] = 1
-            self.parametervalues = copy.copy(self.parametermap)
-            self.parametervalues[:, 0] = np.array(sim.parametervalues)
-            
-            self.variablemap = np.ndarray((len(self.variables), 1))
-            self.variablemap[:, 0] = 1
-                    
+            self.__index_one_sim(sim)
+            print '%s indexed' % (sim.filename)        
             # The first simulation file is indexed and the attributes are 
             # initialised.  
             
@@ -521,11 +511,7 @@ class Simdex:
                         # index this new simulation 
                         self.__index_one_sim(sim)
                         print '%s indexed' % (sim.filename)
-                    
-                        # and finally, add the filename of the nicely indexed 
-                        # simulation to the list of indexed simulations
-                        self.simulations.append(sim.filename)
-        
+                                            
                     else:
                         print '%s, runs from %d s till %d s, therefore, it is NOT \
                              indexed' % (sim.filename, time[0],time[-1])
@@ -672,116 +658,133 @@ class Simdex:
         # separate parameters from variables for simulation 
         simulation.separate()
         
-        # newparameters and newvariables are arrays that will be updated for 
-        # each parameter or variable found.  At the end, they will tell us which
-        # parameters or variables are new
-        newpars = np.ones(len(simulation.parameters))
-        newvars = np.ones(len(simulation.variables))
+        if self.simulations == []:
+            # this is the first simulation to be added to self
+           self.parameters = simulation.parameters # a LIST
+           self.variables = simulation.variables  # a LIST
+           self.simulations.append(simulation.filename)
+           self.parametermap = np.ndarray((len(self.parameters), 1))
+           self.parametermap[:, 0] = 1
+           self.parametervalues = copy.copy(self.parametermap)
+           self.parametervalues[:, 0] = np.array(simulation.parametervalues)
+           self.variablemap = np.ndarray((len(self.variables), 1))
+           self.variablemap[:, 0] = 1
         
-        
-        
-        # PARAMETERS 
-        # we run over all parameters already indexed in self.parameters
-        # parmap, varmap and parvalues will map the new simulation 
-        # for the already indexed parameters.  
-        # So they have length = len(self.parameters)
-        parmap = np.zeros((len(self.parameters), 1))
-        parvalues = np.zeros((len(self.parameters), 1))
-        
-        
-        for i in range(len(self.parameters)):
-            # we try to find the parameter in the list of parameters from the 
-            # new simulation
-            partofind = self.parameters[i]
-            try:
-                position = simulation.parameters.index(partofind)
-                # the next part is only executed if partofind is found 
-                parmap[i] = 1
-                parvalues[i] = simulation.parametervalues[position]
-                # in newparameters we put 0 if we already indexed the parameter
-                newpars[position] = 0
+        else:
+            # add simulation to the set of previously indexed simulations
+            # newparameters and newvariables are arrays that will be updated for 
+            # each parameter or variable found.  At the end, they will tell us which
+            # parameters or variables are new
+            newpars = np.ones(len(simulation.parameters))
+            newvars = np.ones(len(simulation.variables))
+            
+            
+            
+            # PARAMETERS 
+            # we run over all parameters already indexed in self.parameters
+            # parmap, varmap and parvalues will map the new simulation 
+            # for the already indexed parameters.  
+            # So they have length = len(self.parameters)
+            parmap = np.zeros((len(self.parameters), 1))
+            parvalues = np.zeros((len(self.parameters), 1))
+            
+            
+            for i in range(len(self.parameters)):
+                # we try to find the parameter in the list of parameters from the 
+                # new simulation
+                partofind = self.parameters[i]
+                try:
+                    position = simulation.parameters.index(partofind)
+                    # the next part is only executed if partofind is found 
+                    parmap[i] = 1
+                    parvalues[i] = simulation.parametervalues[position]
+                    # in newparameters we put 0 if we already indexed the parameter
+                    newpars[position] = 0
+                    
+                except(ValueError):
+                    # partofind is not found, that's fine 
+                    pass
+            # At the end of the finished for-loop just above, we still have to 
+            # add all the remaining parameters and their values
+            
+            newparameters = [x for (x, y) in zip(simulation.parameters, newpars) \
+                             if y == 1]
+            newparametervalues = [x for (x, y) in \
+                            zip(simulation.parametervalues, newpars) if y == 1]
+            
+            if len(newparameters) > 0:
+                # There ARE new parameters, update the attributes
+                # self.parameters
+                self.parameters.extend(newparameters)
                 
-            except(ValueError):
-                # partofind is not found, that's fine 
-                pass
-        # At the end of the finished for-loop just above, we still have to 
-        # add all the remaining parameters and their values
-        
-        newparameters = [x for (x, y) in zip(simulation.parameters, newpars) \
-                         if y == 1]
-        newparametervalues = [x for (x, y) in \
-                        zip(simulation.parametervalues, newpars) if y == 1]
-        
-        if len(newparameters) > 0:
-            # There ARE new parameters, update the attributes
-            # self.parameters
-            self.parameters.extend(newparameters)
+                # self.parametermap
+                zeroparameters = np.zeros((len(newparameters), 
+                                           len(self.simulations)))
+                self.parametermap = np.append(self.parametermap, 
+                                              zeroparameters, axis = 0)
+                newparcolumn = np.append(parmap, np.ones(len(newparameters)))
+                newparcolumn.resize(len(parmap) + len(newparameters), 1)
+                self.parametermap = np.append(self.parametermap, 
+                                              newparcolumn, axis = 1)
+                
+                # self.parametervalues
+                self.parametervalues = np.append(self.parametervalues, 
+                                                 zeroparameters, axis = 0)
+                newparvaluescolumn = np.append(parvalues, 
+                                               np.array(newparametervalues))
+                newparvaluescolumn.resize(len(parvalues)+len(newparameters), 1)
+                self.parametervalues = np.append(self.parametervalues, \
+                    newparvaluescolumn, axis = 1)
+            else:
+                # there are no new parameters, just add the info from simulation 
+                # in the current index
+                self.parametermap = np.append(self.parametermap, parmap, axis = 1)
+                self.parametervalues = np.hstack((self.parametervalues, parvalues))
+    
+            # VARIABLES 
+            # we run over all variables already indexed in self.variables
+            # varmap will map the new simulation for the already indexed variables.
+            # So they have length = len(self.variables)
+            varmap = np.zeros((len(self.variables), 1))
             
-            # self.parametermap
-            zeroparameters = np.zeros((len(newparameters), 
-                                       len(self.simulations)))
-            self.parametermap = np.append(self.parametermap, 
-                                          zeroparameters, axis = 0)
-            newparcolumn = np.append(parmap, np.ones(len(newparameters)))
-            newparcolumn.resize(len(parmap) + len(newparameters), 1)
-            self.parametermap = np.append(self.parametermap, 
-                                          newparcolumn, axis = 1)
+            for i in range(len(self.variables)):
+                # we try to find the variables in the list of variables from the 
+                # new simulation
+                vartofind = self.variables[i]
+                try:
+                    position = simulation.variables.index(vartofind)
+                    # the next part is only executed if partofind is found 
+                    varmap[i] = 1
+                    # the found variables are deleted from the list
+                    newvars[position] = 0
+                except(ValueError):
+                    # vartofind is not found, that's fine 
+                    pass
+            newvariables = [x for (x, y) in zip(simulation.variables, newvars) \
+                            if y == 1]
+    
+            if len(newvariables) > 0:
             
-            # self.parametervalues
-            self.parametervalues = np.append(self.parametervalues, 
-                                             zeroparameters, axis = 0)
-            newparvaluescolumn = np.append(parvalues, 
-                                           np.array(newparametervalues))
-            newparvaluescolumn.resize(len(parvalues)+len(newparameters), 1)
-            self.parametervalues = np.append(self.parametervalues, \
-                newparvaluescolumn, axis = 1)
-        else:
-            # there are no new parameters, just add the info from simulation 
-            # in the current index
-            self.parametermap = np.append(self.parametermap, parmap, axis = 1)
-            self.parametervalues = np.hstack((self.parametervalues, parvalues))
-
-        # VARIABLES 
-        # we run over all variables already indexed in self.variables
-        # varmap will map the new simulation for the already indexed variables.
-        # So they have length = len(self.variables)
-        varmap = np.zeros((len(self.variables), 1))
-        
-        for i in range(len(self.variables)):
-            # we try to find the variables in the list of variables from the 
-            # new simulation
-            vartofind = self.variables[i]
-            try:
-                position = simulation.variables.index(vartofind)
-                # the next part is only executed if partofind is found 
-                varmap[i] = 1
-                # the found variables are deleted from the list
-                newvars[position] = 0
-            except(ValueError):
-                # vartofind is not found, that's fine 
-                pass
-        newvariables = [x for (x, y) in zip(simulation.variables, newvars) \
-                        if y == 1]
-
-        if len(newvariables) > 0:
-        
-            # self.variables
-            self.variables.extend(newvariables)
+                # self.variables
+                self.variables.extend(newvariables)
+                
+                # self.variablesmap
+                zerovariables = np.zeros((len(newvariables), len(self.simulations)))
+                self.variablemap = np.append(self.variablemap, 
+                                             zerovariables, axis = 0)
+                newvarcolumn = np.append(varmap, np.ones(len(newvariables)))
+                newvarcolumn.resize(len(newvarcolumn), 1)
+                self.variablemap = np.append(self.variablemap, 
+                                             newvarcolumn, axis = 1)
+                
+            else:
+                # no new variables, just add the info from simulation 
+                # in the current index
+                self.variablemap = np.append(self.variablemap, varmap, axis = 1)
             
-            # self.variablesmap
-            zerovariables = np.zeros((len(newvariables), len(self.simulations)))
-            self.variablemap = np.append(self.variablemap, 
-                                         zerovariables, axis = 0)
-            newvarcolumn = np.append(varmap, np.ones(len(newvariables)))
-            newvarcolumn.resize(len(newvarcolumn), 1)
-            self.variablemap = np.append(self.variablemap, 
-                                         newvarcolumn, axis = 1)
+            # and finally, add the simulation filename to self.simulations            
+            self.simulations.append(simulation.filename)
             
-        else:
-            # no new variables, just add the info from simulation 
-            # in the current index
-            self.variablemap = np.append(self.variablemap, varmap, axis = 1)
-     
     def get_identical(self, simID):
         '''
         get_identical(simID)
