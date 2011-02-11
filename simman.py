@@ -65,7 +65,7 @@ Most important methods (* = implemented):
       folders. Checks if the found files are already in simulations, else they 
       are added and their parameters and ALL attributes are updated with the 
       info found in the new files
-    - remove(sim_id): remove a simulation from the simdex
+    * remove(sim_id): remove a simulation from the simdex
     * print(): gives a nice overview of the indexed simulations 
     * filter(dictionary): this method takes as input a dictionary with parameter
       name/value pairs.   It returns a new Simdex object with those simulations
@@ -83,8 +83,10 @@ Most important methods (* = implemented):
     - get_values(var or par): get an array with the values of the variable or
       parameter for each of the simulations in the simdex
     * get_parameter(par): to be merged in get_values!!
-    - save(filename): saves the simdex by pickling (cPickle) to filename.  The 
-      simdex can be loaded later on with the function load_simdex(filename)
+    * save(filename): saves the simdex by pickling (cPickle) to filename.  The 
+      simdex can be loaded later on with the function load_simdex(filename). 
+      This is no method of the class Simdex, so to be imported separately from
+      this module
       
 This info AND more details can be found in the docstrings of each of these
 classes, functions and methods
@@ -353,7 +355,7 @@ class Simdex:
       folders. Checks if the found files are already in simulations, else they 
       are added and their parameters and ALL attributes are updated with the 
       info found in the new files
-    - remove(sim_id): remove a simulation from the simdex
+    * remove(sim_id): remove a simulation from the simdex
     * print(): gives a nice overview of the indexed simulations 
     * filter(dictionary): this method takes as input a dictionary with parameter 
       name/value pairs.   It returns a new Simdex object with those simulations
@@ -381,10 +383,8 @@ class Simdex:
     Important CONVENTIONS:
         - we make a distinction between parameters (one single value)
           and variables (a timeseries of values)
-        - simulation 'id' is integer starting from 1, not 0
-        - this means that the first column of parametermap and parametervalues
-          contains only zeros
-    
+        - simulation 'id' is integer starting from 0 (changed since 30/01/2011)
+            
     Possible IMPROVEMENTS:
     - multi folder file search
     - support multiple filter (well, it's possible, but the filtersets will 
@@ -395,112 +395,30 @@ class Simdex:
     def __init__(self, folder=''):
         '''
         Creates a Simdex object.  
-        Folders is a single folder to be sought for .mat files
-        If folders = '', the current work directory is indexed.
+        Folder is a single folder to be sought for .mat files
+        If folder = '', the current work directory is indexed.
         '''
         # First, initialise some  attributes
-        self.simulations = [''] #simulations[0] is not used!
+        self.simulations = []
         self.filterset = dict()
 
         if folder == '' :
-            # use current workdirectory if none is stated
-            folder = os.getcwd()
+            # an empty simdex is created
+            self.parameters = []
+            self.variables = []
+            self.parametermap = np.ndarray((0, 1))
+            self.parametervalues = copy.copy(self.parametermap)
+            self.variablemap = np.ndarray((0, 1))
+            
         
         # here we get a list with all files in 'folder' that end with .mat
         
-        if os.path.exists(folder):
-            filenames = self.__get_files(folder, '.mat')
+        elif os.path.exists(folder):
+            self.scan(folder)
         else:
             raise IOError('folder does not exist')
         
-        # Convert to full path filenames to avoid confusion
-        full_path_filenames = []
-        for i in range(len(filenames)):
-            full_path_filenames.append(os.path.join(folder,filenames[i]))
-        
-        # index is the pointer to the current file in full_path_filenames
-        index = -1
-        ########################################################################
-        # Now we take the first .mat file and use this as a basis for our index
-        first_file_indexed = False
-        while first_file_indexed == False:
-            index += 1
-            try:
-                # We try the .mat files one by one until 
-                # we find a first Dymola file
-                sim = Simulation(full_path_filenames[index])
-                first_file_indexed = True
-            except:
-                print '%s is no Dymola file.  It is not indexed' % \
-                    (full_path_filenames[index])
-
-        # Now, check the simulation runtime and confirm with user that it is 
-        # correct.  For the next simulation files, the runtime will be compared
-        # to this one to decide if the file is ok or not. 
-        time = sim.get_value('Time')
-        
-        print 'The first found simulation, %s, runs from %d s till %d s' % \
-            (sim.filename, time[0],time[-1])
-        timeOK = raw_input('Is this correct? y/n : ')
-        print '\n'
-        if timeOK == 'y' or timeOK == 'Y':
-            self.simulationstart = time[0]
-            self.simulationstop = time[-1]
-        else:
-            raise NotImplementedError('In that case, please remove this file \
-                manually so the index can start with a correct file')
-            
-        # The next step is to separate parametes and variables from names and
-        # initiate all attributes
-        
-        sim.separate()
-        self.parameters = sim.parameters # a LIST
-        self.variables = sim.variables  # a LIST
-        self.simulations.append(sim.filename)
-        self.parametermap = np.ndarray((len(self.parameters), 2))
-        self.parametermap[:, 0] = 0
-        self.parametermap[:, 1] = 1
-        self.parametervalues = copy.copy(self.parametermap)
-        self.parametervalues[:, 1] = np.array(sim.parametervalues)
-        
-        self.variablemap = np.ndarray((len(self.variables), 2))
-        self.variablemap[:, 0] = 0
-        self.variablemap[:, 1] = 1
-        
-        # The first simulation file is indexed and the attributes are 
-        # initialised.  
-        
-        ########################################################################
-        # The next step is to index all remaining files
-        
-        index += 1
-        while index < len(full_path_filenames):
-            # We try to index the remaining .mat files one by one 
-            try:
-                sim = Simulation(full_path_filenames[index])
-            
-                # Now, check the simulation runtime against previously confirmed
-                # start and stop times
-                time = sim.get_value('Time')
-                
-                if self.simulationstart == time[0] and \
-                    self.simulationstop == time[-1]:
-                    # index this new simulation 
-                    self.__index_one_sim(sim)
-                    print '%s indexed' % (sim.filename)
-                
-                    # and finally, add the filename of the nicely indexed 
-                    # simulation to the list of indexed simulations
-                    self.simulations.append(sim.filename)
-    
-                else:
-                    print '%s, runs from %d s till %d s, therefore, it is NOT \
-                         indexed' % (sim.filename, time[0],time[-1])
-            
-            except :
-                pass
-
-            index += 1 
+ 
 
     def __str__(self):
         '''
@@ -508,25 +426,165 @@ class Simdex:
         with their simID's
         '''
         print '\nsimID', 'Filename\n'
-        for i in range(1, len(self.simulations)):
+        for i in range(len(self.simulations)):
             print i, '   ', self.simulations[i]
         return ''
             
+    def scan(self, folder=''):
+        """
+        Scan the folder for .mat files that are simulation results, and 
+        add them to the simdex
+        Folder is a single folder to be sought for .mat files
+        If folder = '', the current work directory is indexed
+        
+        """
+        if folder == '' :
+            filenames = self.__get_files(os.getcwd(), '.mat')
+        elif os.path.exists(folder):
+            filenames = self.__get_files(folder, '.mat')
+        else:
+            raise IOError('folder does not exist')
+            
+        
+        # Convert to full path filenames to avoid confusion
+        full_path_filenames = []
+        for i in range(len(filenames)):
+            full_path_filenames.append(os.path.join(folder,filenames[i]))
+        
+        # run the following loop only when this is the first time files are
+        # being indexed
+        if self.simulations == []:
+            # index is the pointer to the current file in full_path_filenames
+            index = -1
+            ########################################################################
+            # Now we take the first .mat file and use this as a basis for our index
+            first_file_indexed = False
+            while first_file_indexed == False:
+                index += 1
+                try:
+                    # We try the .mat files one by one until 
+                    # we find a first Dymola file
+                    sim = Simulation(full_path_filenames[index])
+                    first_file_indexed = True
+                except:
+                    print '%s is no Dymola file.  It is not indexed' % \
+                        (full_path_filenames[index])
+    
+            # Now, check the simulation runtime and confirm with user that it is 
+            # correct.  For the next simulation files, the runtime will be compared
+            # to this one to decide if the file is ok or not. 
+            time = sim.get_value('Time')
+            
+            print 'The first found simulation, %s, runs from %d s till %d s' % \
+                (sim.filename, time[0],time[-1])
+            timeOK = raw_input('Is this correct? y/n : ')
+            print '\n'
+            if timeOK == 'y' or timeOK == 'Y':
+                self.simulationstart = time[0]
+                self.simulationstop = time[-1]
+            else:
+                raise NotImplementedError('In that case, please remove this file \
+                    manually so the index can start with a correct file')
+                
+            # The next step is to separate parametes and variables from names and
+            # initiate all attributes
+            
+            sim.separate()
+            self.parameters = sim.parameters # a LIST
+            self.variables = sim.variables  # a LIST
+            self.simulations.append(sim.filename)
+            self.parametermap = np.ndarray((len(self.parameters), 1))
+            self.parametermap[:, 0] = 1
+            self.parametervalues = copy.copy(self.parametermap)
+            self.parametervalues[:, 0] = np.array(sim.parametervalues)
+            
+            self.variablemap = np.ndarray((len(self.variables), 1))
+            self.variablemap[:, 0] = 1
+                    
+            # The first simulation file is indexed and the attributes are 
+            # initialised.  
+            
+            ########################################################################
+            # The next step is to index all remaining files
+            
+            index += 1
+            while index < len(full_path_filenames):
+                # We try to index the remaining .mat files one by one 
+                try:
+                    sim = Simulation(full_path_filenames[index])
+                
+                    # Now, check the simulation runtime against previously confirmed
+                    # start and stop times
+                    time = sim.get_value('Time')
+                    
+                    if self.simulationstart == time[0] and \
+                        self.simulationstop == time[-1]:
+                        # index this new simulation 
+                        self.__index_one_sim(sim)
+                        print '%s indexed' % (sim.filename)
+                    
+                        # and finally, add the filename of the nicely indexed 
+                        # simulation to the list of indexed simulations
+                        self.simulations.append(sim.filename)
+        
+                    else:
+                        print '%s, runs from %d s till %d s, therefore, it is NOT \
+                             indexed' % (sim.filename, time[0],time[-1])
+                
+                except :
+                    pass
+    
+                index += 1
+        
+        else:
+            # there are already files in the simdex
+            index = 0
+            while index < len(full_path_filenames):
+                # We try to index the remaining .mat files one by one 
+                try:
+                    sim = Simulation(full_path_filenames[index])
+                
+                    # Now, check the simulation runtime against previously confirmed
+                    # start and stop times
+                    time = sim.get_value('Time')
+                    
+                    if self.simulationstart == time[0] and \
+                        self.simulationstop == time[-1]:
+                        # index this new simulation 
+                        self.__index_one_sim(sim)
+                        print '%s indexed' % (sim.filename)
+                    
+                        # and finally, add the filename of the nicely indexed 
+                        # simulation to the list of indexed simulations
+                        self.simulations.append(sim.filename)
+        
+                    else:
+                        print '%s, runs from %d s till %d s, therefore, it is NOT \
+                             indexed' % (sim.filename, time[0],time[-1])
+                
+                except :
+                    pass
+    
+                index += 1            
+        
+        
+                
+
+
     def get_filenames(self, form='filename'):
         """
         get_filenames(format='rel')
-        Returns a list of the filenames (like self.simulations but without the 
-        empty string in the beginning).
+        Returns a list of the filenames (like self.simulations).
         
         form = 'filename' (default): only the filenames
         form = 'path' : full path name
         """
         
-        simulations = self.simulations[1:]
+        
         if form == 'path':
-            result = simulations
+            result = self.simulations
         elif form == 'filename':
-            result = [os.path.split(x)[1] for x in simulations]
+            result = [os.path.split(x)[1] for x in self.simulations]
         else:
             print 'form is not recognised'
             raise ValueError
@@ -561,7 +619,7 @@ class Simdex:
         if tp == 'all' or tp == 'par':
             # we search for parameters
             matchespar = []
-            for i in range(0, len(self.parameters)):
+            for i in range(len(self.parameters)):
                 m = p.search(self.parameters[i])
                 if m:
                     matchespar.append(self.parameters[i])
@@ -570,7 +628,7 @@ class Simdex:
         if tp == 'all' or tp == 'var':
             # we search for variables
             matchesvar = []
-            for i in range(0, len(self.variables)):
+            for i in range(len(self.variables)):
                 m = p.search(self.variables[i])
                 if m:
                     matchesvar.append(self.variables[i])
@@ -641,8 +699,7 @@ class Simdex:
                 # the next part is only executed if partofind is found 
                 parmap[i] = 1
                 parvalues[i] = simulation.parametervalues[position]
-#                print i, partofind, simulation.parametervalues[position]
-                # in newparameters we put a 0 if we already indexed a parameter
+                # in newparameters we put 0 if we already indexed the parameter
                 newpars[position] = 0
                 
             except(ValueError):
@@ -659,8 +716,6 @@ class Simdex:
         if len(newparameters) > 0:
             # There ARE new parameters, update the attributes
             # self.parameters
-#            print 'newparameters:',newparameters
-            # There ARE new parameterse, update the attributes
             self.parameters.extend(newparameters)
             
             # self.parametermap
@@ -672,7 +727,6 @@ class Simdex:
             newparcolumn.resize(len(parmap) + len(newparameters), 1)
             self.parametermap = np.append(self.parametermap, 
                                           newparcolumn, axis = 1)
-            # print 'slang', self.parametermap.shape, '\n' 
             
             # self.parametervalues
             self.parametervalues = np.append(self.parametervalues, 
@@ -742,16 +796,15 @@ class Simdex:
         # Approache: copy self and remove the unneeded columns from 
         # parametermap, parametervalues and variablemap by slicing
         
-        newsimdex = copy.copy(self)
-        newsimdex.simulations = ['']
+        newsimdex = copy.deepcopy(self)
+        newsimdex.simulations = []
         
         parmap = self.parametermap[:, simID]
         varmap = self.variablemap[:, simID]
         
-        sims_to_keep = [True]
-        # First value in sims_to_keep is for the dummy columns
-
-        for i in range(1, len(self.simulations)):
+        sims_to_keep = []
+        
+        for i in range(len(self.simulations)):
             if np.all(self.parametermap[:, i] == parmap) and \
                 np.all(self.variablemap[:, i] == varmap):
                 # we have catched an identical simulation
@@ -795,8 +848,9 @@ class Simdex:
         # and slice self.parametermap and self.parametervalues with that array
         
         tolerance = 0.005        
+        # list of rownumbers from self.parameters with concerned parameters
         rows = []
-        values = []
+        values = []    
         for i in pardic:
             rows.append(self.parameters.index(i))
             values.append(pardic[i])
@@ -852,8 +906,7 @@ class Simdex:
         # only simulations satisfying both the requirements are selected
         # first (dummy) row of self.simulations has also to be kept
         satisfying = satisfyingmap & satisfyingval
-        satisfying[0] = True
-        
+                
         # we create a new simdex object, with identical properties as self
         # but containing only the simulations we have selected
         
@@ -916,7 +969,7 @@ class Simdex:
         # take care, first element is dummy value (zero)
         
         print '\nsimID', parameter, 'Filename\n'
-        for i in range(1, len(self.simulations)):
+        for i in range(len(self.simulations)):
             print i, '   ', result[i], '  ', self.simulations[i]
         
         return result
@@ -941,8 +994,7 @@ class Simdex:
         varindex = self.variables.index(variable)
         simulations = [x for (x, y) in \
             zip(self.simulations, self.variablemap[varindex,:]) if y == 1]
-        simulations.insert(0,'')
-        
+                
         if len(simulations) < len(self.simulations):
             raise ValueError('Some simulations did NOT have this variable')
         
@@ -950,9 +1002,9 @@ class Simdex:
         plotstring = ''
         plotlegend = ''
         
-        for s in range(1, len(simulations)):
+        for s in range(len(simulations)):
             sim = Simulation(simulations[s])
-            if s == 1:
+            if s == 0:
                 #only once: get time
                 time = sim.get_value('Time')
             stringske = 'simID_' + str(s) + "=sim.get_value('" + variable + "')"
@@ -964,8 +1016,11 @@ class Simdex:
         plotlegend = plotlegend[:-1]
         
         fig = plt.figure()
-        exec("lines = plt.plot(" + plotstring + ")")
-        exec("leg = plt.legend((" + plotlegend + "))")
+        ax = fig.add_subplot(111)
+        exec("lines = ax.plot(" + plotstring + ")")
+        exec("leg = ax.legend((" + plotlegend + "))")
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel(variable)
         
         return [fig, lines, leg]
 
@@ -987,42 +1042,41 @@ class Simdex:
             
         # 1. and 2.
         varindex_X = self.variables.index(variable_X)
-        simulations_X = [x for (x, y) in \
-            zip(self.simulations, self.variablemap[varindex_X,:]) if y == 1]
-        simulations_X.insert(0,'')
-
         varindex_Y = self.variables.index(variable_Y)
-        simulations_Y = [x for (x, y) in \
-            zip(self.simulations, self.variablemap[varindex_Y,:]) if y == 1]
-        simulations_Y.insert(0,'')
-        
-        if len(simulations_X) < len(self.simulations):
-            raise ValueError('Some simulations did NOT have this variable')
-        
-        if len(simulations_Y) < len(self.simulations):
-            raise ValueError('Some simulations did NOT have this variable')
+        simulations = [x for (x, y, z) in \
+            zip(self.simulations, self.variablemap[varindex_X,:], 
+                self.variablemap[varindex_Y,:]) if y == 1 and z == 1]
+       
+        if len(simulations) < len(self.simulations):
+            raise ValueError('Some simulations did NOT have \
+                one of these variables')
         
         # 3. and 4.
         plotstring = ''
         plotlegend = ''
         
-        for s in range(1, len(simulations_X)):
-            sim_X = Simulation(simulations_X[s])
-            stringske_X = 'simIDX_' + str(s) + "=sim_X.get_value('" + variable_X + "')"
+        for s in range(len(simulations)):
+            sim = Simulation(simulations[s])
+            stringske_X = 'simIDX_' + str(s) + \
+                          "=sim.get_value('" + variable_X + "')"
             exec(stringske_X)
-            for t in range(1, len(simulations_Y)):
-                sim_Y = Simulation(simulations_Y[t])
-                stringske_Y = 'simIDY_' + str(t) + "=sim_Y.get_value('" + variable_Y + "')"            
-                exec(stringske_Y)
-                plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(t) + ','
-                plotlegend += "'simIDY_" + str(s) + "',"
+            stringske_Y = 'simIDY_' + str(s) + \
+                          "=sim.get_value('" + variable_Y + "')"            
+            exec(stringske_Y)
+            plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(s) + ','
+            plotlegend += "'simID_" + str(s) + "',"
         
         plotstring = plotstring[:-1]
         plotlegend = plotlegend[:-1]
         
         fig = plt.figure()
-        exec("lines = plt.plot(" + plotstring + ",'o')")
-        exec("leg = plt.legend((" + plotlegend + "))")
+        ax = fig.add_subplot(111)
+        exec("lines = ax.plot(" + plotstring + ")")
+        exec("leg = ax.legend((" + plotlegend + "))")
+        
+        ax.set_xlabel(variable_X)
+        ax.set_ylabel(variable_Y)
+        
         return [fig, lines, leg]
 
     
@@ -1037,7 +1091,7 @@ class Simdex:
         p = re.compile(regex, re.IGNORECASE)
         matches = []
         simids = []
-        for i in range(0, len(self.simulations)):
+        for i in range(len(self.simulations)):
             m = p.search(self.simulations[i])
             if m:
                 matches.append(self.simulations[i])
@@ -1048,6 +1102,39 @@ class Simdex:
             print i, '   ', sim
         return simids
         
+    def remove(self, list_simIDs):
+        """
+        remove(list_simIDs)
+        
+        Remove all listed sims from the simdex.  If only 1 sim has to be removed
+        it can also be an integer instead of a list
+        """
+        
+        if isinstance(list_simIDs, int):
+            list_to_remove = [list_simIDs]
+        else:
+            list_to_remove = list_simIDs
+        
+        # make an array to slice with 
+        sims_to_keep = [True for x in self.simulations]        
+        for simID in list_to_remove:
+            sims_to_keep[simID] = False
+        
+        newsimdex = copy.deepcopy(self)
+        
+        s = np.array(sims_to_keep)
+        newsimdex.simulations = [x for (x,y) in zip(self.simulations, s) \
+                                    if y == True]
+        newsimdex.parametermap = newsimdex.parametermap[ : , s]
+        newsimdex.parametervalues = newsimdex.parametervalues[ : , s]
+        newsimdex.variablemap = newsimdex.variablemap[ : , s]
+        
+        # remove all empty rows and corresponding parameters/variables
+        newsimdex.cleanup()
+        
+        return newsimdex
+    
+    
     def save(self, filename):
         """
         save(filename)
