@@ -465,26 +465,25 @@ class Simdex:
                     # We try the .mat files one by one until 
                     # we find a first Dymola file
                     sim = Simulation(full_path_filenames[index])
-                    first_file_indexed = True
                 except:
                     print '%s is no Dymola file.  It is not indexed' % \
                         (full_path_filenames[index])
     
-            # Now, check the simulation runtime and confirm with user that it is 
-            # correct.  For the next simulation files, the runtime will be compared
-            # to this one to decide if the file is ok or not. 
-            time = sim.get_value('Time')
-            
-            print 'The first found simulation, %s, runs from %d s till %d s' % \
-                (sim.filename, time[0],time[-1])
-            timeOK = raw_input('Is this correct? y/n : ')
-            print '\n'
-            if timeOK == 'y' or timeOK == 'Y':
-                self.simulationstart = time[0]
-                self.simulationstop = time[-1]
-            else:
-                raise NotImplementedError('In that case, please remove this file \
-                    manually so the index can start with a correct file')
+                # Now, check the simulation runtime and confirm with user that it is 
+                # correct.  For the next simulation files, the runtime will be compared
+                # to this one to decide if the file is ok or not. 
+                time = sim.get_value('Time')
+                
+                print 'The first found simulation, %s, runs from %d s till %d s' % \
+                    (sim.filename, time[0],time[-1])
+                timeOK = raw_input('Is this correct? y/n : ')
+                print '\n'
+                if timeOK == 'y' or timeOK == 'Y':
+                    self.simulationstart = time[0]
+                    self.simulationstop = time[-1]
+                    first_file_indexed = True
+                else:
+                    print '%s is NOT indexed' % (sim.filename)
                 
             # The next step is to separate parametes and variables from names and
             # initiate all attributes
