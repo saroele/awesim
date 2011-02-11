@@ -1023,7 +1023,6 @@ class Simdex:
         fig = plt.figure()
         exec("lines = plt.plot(" + plotstring + ",'o')")
         exec("leg = plt.legend((" + plotlegend + "))")
-        
         return [fig, lines, leg]
 
     
