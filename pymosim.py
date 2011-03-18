@@ -153,13 +153,12 @@ def run_ds(dymosim = '', dsin = '', result = ''):
                 'result':'result.mat'}
     
     for arg in arguments:
-        if arg is not '':
+        if eval(arg) is not '':
             arguments[arg] = eval(arg)
         
     
     oscmd = ' '.join([arguments['dymosim'], '-s', arguments['dsin'], 
                       arguments['result']])
-        
         
     proc = Popen(oscmd)
     return proc    
