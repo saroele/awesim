@@ -59,11 +59,27 @@ def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
     """
     pass
 
-def set_par(parameter, value, dsin = '', copy_to = None):
+def set_par(parameter, value, dsin='', copy_to = None):
     """
-    anyone?
+    This function depicts the change of a parametervalue in an existing dsin.txt
     """
-    pass
+
+    if dsin == '':
+        dsin = 'dsin.txt'
+
+    parameter_dsin = '# ' + str(parameter)
+    dsin_file = open(dsin, 'r+')
+    for s in dsin_file:
+        if s.find(parameter) > -1:
+            print 'The parameter', parameter, 'is found in', dsin
+        if s.find(parameter_dsin) > -1:
+            splitted = s.split()
+            s = s.replace(splitted[1], value)
+            print 'and is replace by', value, '.'
+    dsin_file.close()
+    
+    if copy_to != None:
+        copyfile(dsin, copy_to)
 
 
 def kill_after(proc, seconds):
