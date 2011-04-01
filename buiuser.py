@@ -20,7 +20,10 @@ Most important methods:
 # import time
 import numpy as np
 # import matplotlib.pyplot as plt
-# from simman import Simulation, Simdex
+from simman import Simulation, Simdex
+
+      
+
 
 def get_smoothened_data(from_data, from_time, to_time, to_file):
     """

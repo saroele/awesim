@@ -7,14 +7,14 @@ Created on Thu Mar 10 09:39:55 2011
 
 
 import os
-import simviz
+import simviz, simviz_2
 import numpy as np
 from simman import Simulation, Simdex
-
 path = r'E:\6_Teaching\2011_RobKenneth\result'
 os.chdir(path)
 
 s1 = Simulation('HydronischHoutK14')
 
-simviz.plt_comfort(s1)
+# simviz.plt_comfort(s1)
+simviz_2.plt_scattercomfort(s1)
 

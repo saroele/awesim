@@ -36,7 +36,8 @@ def plt_comfort(self):
     print 'the outdoor temperature'
             
     # now get the data of the zone temperatures
-    dickie = self.exist(u'summary.Top')
+    # dickie = self.exist(u'summary.Top')
+    dickie = self.exist(u'Top\[')
     temps = np.zeros((len(time),len(dickie)))
     for colum in range(len(dickie)):            
         temps[:,colum] = self.get_value(dickie[colum])
@@ -47,12 +48,12 @@ def plt_comfort(self):
     # now get the statistical data of the temperatures ...
     median, p_stdev, m_stdev, ppp_stdev, mmm_stdev = get_stdev(time, temps)
 
-    to_time, outdoor = get_smoothened_data(outdoor, time, 86400, 'to_file')
-    to_time, median = get_smoothened_data(median, time, 86400, 'to_file')
-    to_time, p_stdev = get_smoothened_data(p_stdev, time, 86400, 'to_file')
-    to_time, m_stdev = get_smoothened_data(m_stdev, time, 86400, 'to_file')
-    to_time, ppp_stdev = get_smoothened_data(ppp_stdev, time, 86400, 'to_file')
-    to_time, mmm_stdev = get_smoothened_data(mmm_stdev, time, 86400, 'to_file')
+    to_time, outdoor = get_smoothened_data(outdoor, time, 3600, 'to_file')
+    to_time, median = get_smoothened_data(median, time, 3600, 'to_file')
+    to_time, p_stdev = get_smoothened_data(p_stdev, time, 3600, 'to_file')
+    to_time, m_stdev = get_smoothened_data(m_stdev, time, 3600, 'to_file')
+    to_time, ppp_stdev = get_smoothened_data(ppp_stdev, time, 3600, 'to_file')
+    to_time, mmm_stdev = get_smoothened_data(mmm_stdev, time, 3600, 'to_file')
 
     # ... and plot them
     gu_yeardata(to_time, outdoor, median, p_stdev, m_stdev, ppp_stdev, mmm_stdev)
@@ -105,11 +106,10 @@ def gu_yeardata(time, ref, median, p_stdev, m_stdev, ppp_stdev, mmm_stdev):
     - temps = np.array of data from which the plot is wanted
     """
 
-    if time[-1] - time [0] > 10000000:
-        xticks = (0, 2678400, 5097600, 7776000, 10368000, 13046400, \
-        15638400, 18316800, 20995200, 23587200, 26265600, 28857600, 31536000)
-        xticknames =  ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', \
-        'Aug', 'Sep', 'Oct', 'Nov', 'Dec', '')
+    xticks = (0, 2678400, 5097600, 7776000, 10368000, 13046400, \
+    15638400, 18316800, 20995200, 23587200, 26265600, 28857600, 31536000)
+    xticknames =  ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', \
+    'Aug', 'Sep', 'Oct', 'Nov', 'Dec', '')
     
     fig = plt.figure(1, figsize=(10, 4))
         # graphical unit for the large graph
@@ -148,6 +148,6 @@ def gu_yeardata(time, ref, median, p_stdev, m_stdev, ppp_stdev, mmm_stdev):
     
     gu1.legend( (p1), ('Outdoor'), 'lower left')    
     gu1.legend( (p2), ('median'), 'lower center')    
-    gu1.legend( (p3, p4), ('sigma','3*sigma'), loc = (0,-0.2))    
+    gu1.legend( (p3, p4), ('sigma','3*sigma'), 'lower right')    
     
     fig.show()
