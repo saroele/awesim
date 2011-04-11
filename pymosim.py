@@ -128,7 +128,7 @@ def set_parametric_run(path, dickie):
     for i in range(len(combination)):
         path_run = set_simulation(path, parameters_dsin, combination[i], i)
         path_list.append(path_run)
-        print 'Setting simulation %s our of %s' %(i,len(combination))
+        print 'Setting simulation %s out of %s' %(i,len(combination))
     else:
         print 'Mission accomplished.'
         
@@ -153,6 +153,14 @@ def close_parametric_run(workdir, subdir):
             copyfile(resultfile_oldpath,resultfile_newpath)
         else:
             print 'Run_' + str(i) + ' failed to simulate.'
+
+        logfile_oldpath = subdir[i] + '\\dslog.txt'
+        logfile_newpath = result_path + '\\dslog_run_' + str(i) + '.txt'
+        existing = os.access(resultfile_oldpath, os.F_OK)        
+        if  existing:
+            copyfile(logfile_oldpath, logfile_newpath)
+        else:
+            print 'Run_' + str(i) + ' did not even start ??!!'
 
     for i in range(len(subdir)):
         existing = os.access(subdir[i], os.R_OK)        
@@ -182,24 +190,22 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     inputpath = path + '\\inputs_pr'
     inputfiles = os.listdir(inputpath)
 
-    file_data = []
     dsin_file = open(dsin, 'r')
-    for s in dsin_file:
-        file_data.append(s)
+    file_data = dsin_file.readlines()
     dsin_file.close()
 
     for i in range(len(file_data)):
         for j in range(len(parameters)):
             if file_data[i].find(parameters[j]) > -1:
-                splitted = file_data[i-1].split()
-                old_value = splitted[1]
-                file_data[i-1] = file_data[i-1].replace(old_value, str(values[j]))
+                splitted = file_data[i].split()
+                splitted[1] = str(values[j])
+                splitted.append('\n')
+                file_data[i] = ' '.join(splitted)
                 print 'The parameter', parameters[j], 'is found in', dsin, 'and is replace by', values[j], '.'
 
     dsin_temp = open('dsin_temp.txt', 'w')
-    for i in range(len(file_data)):
-        dsin_temp.write(file_data[i])
-    dsin_file.close()
+    dsin_temp.writelines(file_data)
+    dsin_temp.close()
     
     if copy_to != None:
         dsin_to = os.getcwd() + '\\run_' + str(copy_to)
