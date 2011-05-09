@@ -145,7 +145,12 @@ class Simulation:
         try:
             d = scipy.io.loadmat(filename, chars_as_strings = False) 
             # if all goes well, d is a dictionary 
-            # check the fields of d to make sure we're having a dymola file
+            
+        except(UnicodeDecodeError):
+            raise
+        
+        # check the fields of d to make sure we're having a dymola file        
+        try:
             for field in ['dataInfo', 'name', 'data_1', 'data_2'] :
                 # here we create numpy arrays with names dataInfo, name, 
                 # data_1 and data_2
