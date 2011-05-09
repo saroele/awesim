@@ -110,10 +110,10 @@ if analyse_results:
             summary[var] = sim.get_value(var)
             
     res_suc_sortedCPU = sorted(results_successful, 
-                          key = lambda x: float(x['CPU time']))
+                          key = lambda x: float(x['CPU_time']))
     
     algos = [s['solver ID'] for s in res_suc_sortedCPU]
-    CPU_time = [s['CPU time'] for s in res_suc_sortedCPU]    
+    CPU_time = [s['CPU_time'] for s in res_suc_sortedCPU]    
     perc_wrong = [s['perc_wrong'] for s in res_suc_sortedCPU]
     alg = [s['algorithm'] for s in res_suc_sortedCPU]
     algorithm = [''.join(['ID = ', ID, ' - ', a]) for ID, a in zip(algos, alg)]
@@ -134,9 +134,9 @@ if analyse_results:
         t.set_fontsize('small')    # the legend text fontsize
     
     lines1 = ax1.plot(range(len(CPU_time)), CPU_time, 'rD', markersize = 10, 
-             label = 'CPU time')
+             label = 'CPU_time')
     ax1.set_xlim((-1, len(CPU_time)))
-    ax1.set_ylabel('CPU time in seconds')
+    ax1.set_ylabel('CPU_time in seconds')
     ticks = ax1.set_xticks(range(len(CPU_time)))
     labels = ax1.set_xticklabels(algorithm, rotation = 'vertical')
     ax1.set_xlim((-1, len(CPU_time)))
@@ -186,7 +186,7 @@ if analyse_results:
                     s['perc_wrong'] <= max_perc_wrong]
 
     algos = [s['solver ID'] for s in res_good_sortedCPU]
-    CPU_time = [s['CPU time'] for s in res_good_sortedCPU]    
+    CPU_time = [s['CPU_time'] for s in res_good_sortedCPU]    
     perc_wrong = [s['perc_wrong'] for s in res_good_sortedCPU]
     alg = [s['algorithm'] for s in res_good_sortedCPU]
     algorithm = [''.join(['ID = ', ID, ' - ', a]) for ID, a in zip(algos, alg)]
@@ -205,9 +205,9 @@ if analyse_results:
         t.set_fontsize('small')    # the legend text fontsize
     
     lines1 = ax1.plot(range(len(CPU_time)), CPU_time, 'rD', markersize = 10, 
-             label = 'CPU time')
+             label = 'CPU_time')
     ax1.set_xlim((-1, len(CPU_time)))
-    ax1.set_ylabel('CPU time in seconds')
+    ax1.set_ylabel('CPU_time in seconds')
     ticks = ax1.set_xticks(range(len(CPU_time)))
     labels = ax1.set_xticklabels(algorithm, rotation = 'vertical')
     ax1.set_xlim((-1, len(CPU_time)))
@@ -303,9 +303,9 @@ if analyse_results:
         t.set_fontsize('small')    # the legend text fontsize
     
     lines1 = ax1.plot(range(len(CPU_time)), CPU_time, 'rD', markersize = 10, 
-             label = 'CPU time')
+             label = 'CPU_time')
     ax1.set_xlim((-1, len(CPU_time)))
-    ax1.set_ylabel('CPU time in seconds')
+    ax1.set_ylabel('CPU_time in seconds')
     ticks = ax1.set_xticks(range(len(CPU_time)))
     labels = ax1.set_xticklabels(algorithm, rotation = 'vertical')
     ax1.set_xlim((-1, len(CPU_time)))
@@ -320,7 +320,7 @@ if analyse_results:
                     s[vars_to_check[0] + '_rmsrel'] <= max_rel_rms]
 
     algos = [s['solver ID'] for s in res_perfect_sortedCPU]
-    CPU_time = [s['CPU time'] for s in res_perfect_sortedCPU]    
+    CPU_time = [s['CPU_time'] for s in res_perfect_sortedCPU]    
     perc_wrong = [s['perc_wrong'] for s in res_perfect_sortedCPU]
     alg = [s['algorithm'] for s in res_perfect_sortedCPU]
     algorithm = [''.join(['ID = ', ID, ' - ', a]) for ID, a in zip(algos, alg)]
@@ -345,9 +345,9 @@ if analyse_results:
         t.set_fontsize('small')    # the legend text fontsize
     
     lines1 = ax1.plot(range(len(CPU_time)), CPU_time, 'rD', markersize = 10, 
-             label = 'CPU time')
+             label = 'CPU_time')
     ax1.set_xlim((-1, len(CPU_time)))
-    ax1.set_ylabel('CPU time in seconds')
+    ax1.set_ylabel('CPU_time in seconds')
     ticks = ax1.set_xticks(range(len(CPU_time)))
     labels = ax1.set_xticklabels(algorithm, rotation = 'vertical')
     ax1.set_xlim((-1, len(CPU_time)))

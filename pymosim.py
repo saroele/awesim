@@ -254,6 +254,9 @@ def kill_after(proc, seconds):
 
 def analyse_log(log_file):
     """
+    analyse_log(log_file)
+    log_file = string with path to a dslog.txt file
+    
     Check if the simulation ended successfully, which solver was used and
     how much time it took.  Optionally, show the number of this and that
     Returns a dictionary with the results
@@ -268,7 +271,7 @@ def analyse_log(log_file):
             summary['successful'] = True
         elif line.find('CPU time for integration') > -1 or \
              line.find('CPU-time for integration') > -1:
-            summary['CPU time'] = line.split(' ')[-2]
+            summary['CPU_time'] = line.split(' ')[-2]
         elif line.find('Number of (successful) steps') > -1:
             summary['steps_ok'] = line.split(' ')[-1]
         elif line.find('Number of rejected steps') > -1:
@@ -279,7 +282,7 @@ def analyse_log(log_file):
             summary['algorithm'] = line.split(' ')[-1].strip('\n')
         elif line.find('This simulation timed out and was killed') > -1:
             summary['successful'] = False
-            summary['timed out'] = True
+            summary['timed_out'] = True
         elif line.find('Corresponding result file') > -1:
             summary['result file'] = line.split(' ')[-1].strip('\n')
     lf.close()
