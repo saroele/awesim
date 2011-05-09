@@ -91,7 +91,7 @@ def start_parametric_run(path):
     try:    
         proc = subprocess.Popen(oscmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output = proc.communicate()
-        proc.wait()
+        # proc.wait()
     except:
         errormessage = 'Simulation not even started'
     
