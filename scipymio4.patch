@@ -1,0 +1,13 @@
+diff -r -u scipy/io/matlab/mio4.py scipy_modified/io/matlab/mio4.py
+--- scipy/io/matlab/mio4.py	Fri May  6 17:43:10 2011
++++ scipy_modified/io/matlab/mio4.py	Fri May  6 12:03:12 2011
+@@ -147,7 +147,8 @@
+     def get_raw_array(self):
+         arr = self.read_array().astype(np.uint8)
+         # ascii to unicode
+-        S = arr.tostring().decode('ascii')
++        # was like this: S = arr.tostring().decode('ascii')
++        S = arr.tostring().decode()
+         return np.ndarray(shape=self.header['dims'],
+                           dtype=np.dtype('U1'),
+                           buffer = np.array(S)).copy()
