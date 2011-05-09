@@ -197,11 +197,17 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     for i in range(len(file_data)):
         for j in range(len(parameters)):
             if file_data[i].find(parameters[j]) > -1:
-                splitted = file_data[i].split()
+                # check structure of file: all on single line or on 2 lines                
+                if file_data[i-1].find(u'#') > -1:
+                    line = i
+                else:
+                    line = i-1
+                splitted = file_data[line].split()
                 splitted[1] = str(values[j])
                 splitted.append('\n')
-                file_data[i] = ' '.join(splitted)
-                print 'The parameter', parameters[j], 'is found in', dsin, 'and is replace by', values[j], '.'
+                file_data[line] = ' '.join(splitted)
+                print 'The parameter %s is found in %s and is replaced by %s' \
+                        %(parameters[j], dsin, values[j])
 
     dsin_temp = open('dsin_temp.txt', 'w')
     dsin_temp.writelines(file_data)
