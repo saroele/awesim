@@ -130,7 +130,7 @@ def set_parametric_run(path, dickie):
         path_list.append(path_run)
         print 'Setting simulation %s out of %s' %(i,len(combination))
     else:
-        print 'Mission accomplished.'
+        print 'All simulations are set.'
         
     return path_list
 
