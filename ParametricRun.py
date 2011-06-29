@@ -13,13 +13,13 @@ import numpy as np
 import pp
 from shutil import rmtree
 
+sys.path.append(os.path.abspath(r'D:\Ruben_BWK239\GIT_python'))
 import pymosim
 from simman import Simulation, Simdex
 
-sys.path.append(os.path.abspath(r'D:\Ruben_BWK239\GIT_python'))
 
 # Script settings #############################################################
-setup_and_run = False   
+setup_and_run = True   
 get_results = True
 analyse_results = True
 
@@ -28,7 +28,7 @@ ncpus=3
 
 # directory of the parametric run.  Make sure it contains a dsin.txt and 
 # dymosim.exe and a subfolder 'inputs_pr' with all input files 
-work_dir = r'C:\Workspace\BS2011\PR2'
+work_dir = r'D:\Ruben_BWK239\IBPSA_parrun'
 
 # Specify here the parameters and values for the parametric run
 # format: list of ['long_name', [val1, ..., valn], 'short_name']
@@ -36,7 +36,7 @@ pars = [
 #  [r'building_forGrid.heaSys.onOffDelay', [900, 2000], 'onOffDelay'],
   [r'building_forGrid.heaSys.betaFactorHeatPump', [0.5,0.8], 'beta'],
   [r'building_forGrid.whichUser',[3,30], 'user'],
-  [r'building_forGrid.heaSys.volumeTank',[0.2,0.3, 0.4], 'vol_tank'],
+#  [r'building_forGrid.heaSys.volumeTank',[0.2,0.3, 0.4], 'vol_tank'],
   [r'building_forGrid.heaSys.HPControl.dTSafetyTop',[3,4,5], 'dTSafetyTop']
         ]
 # Specify the variables required for the analysis
