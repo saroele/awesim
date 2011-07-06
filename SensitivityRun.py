@@ -19,21 +19,21 @@ from simman import Simulation, Simdex
 sys.path.append(os.path.abspath(r'D:\Ruben_BWK239\GIT_python'))
 
 # Script settings #############################################################
-setup_and_run = False   
+setup_and_run = True   
 get_results = True
 analyse_results = True
 
 # number of cpu's for the sensitivity run
-ncpus=3
+ncpus=2
 
 # directory of the sensitivity run.  Make sure it contains a dsin.txt and 
 # dymosim.exe and a subfolder 'inputs_pr' with all input files 
-work_dir = r'C:\Workspace\BS2011\PR2'
+work_dir = u'C:\\Users\\u0066125\\Workspace\\BS2011\\PP'
 
 # the sensitivity for the sensitivity analysis. For all variables, a 
 # run will be executed with (1-sensitivity) * default and 
 # (1+sensitivity) * default.   
-sensitivity = 0.1
+sensitivity = 0.2
 
 # Specify here the parameters and values for the sensitivity run
 # format: list of ['long_name', reference value, 'short_name']
@@ -42,10 +42,10 @@ sensitivity = 0.1
 # be studied taking default +/ 1
 pars = [
     [r'building_forGrid.heaSys.betaFactorHeatPump',0.8, 'beta'],
-#    [r'building_forGrid.heaSys.volumeTank', 0.25, 'vol_tank'],
-#    [r'building_forGrid.heaSys.HPControl.dTSafetyTop', 3, 'dTSafetyTop'],
-    [u'building_forGrid.heaSys.timeFilter', 43200, 'timeFilter'],
-    [u'building_forGrid.heaSys.dTSupRetNom', 6, 'dTSupRetNom'],
+    [r'building_forGrid.heaSys.volumeTank', 0.25, 'vol_tank'],
+#    [r'building_forGrid.heaSys.HPControl.dTSafetyTop', 3.0, 'dTSafetyTop'],
+    [u'building_forGrid.heaSys.timeFilter', 43200.0, 'timeFilter'],
+    [u'building_forGrid.heaSys.dTSupRetNom', 5, 'dTSupRetNom'],
     [u'building_forGrid.heaSys.FHChars[1].T', 0.2, 'FHChars_T1'],
     [u'building_forGrid.heaSys.FHChars[2].T', 0.2, 'FHChars_T2']
         ]
@@ -216,12 +216,12 @@ if analyse_results:
             # index should become a list with 3 indices pointing to 
             # the lower value, ref value and upper value for the considered parameter            
             try:
-                index = [np.nonzero(par_values < pars_to_run[v])[0][0]]
+                index = [np.nonzero(par_values < (1-sensitivity/2)*pars_to_run[v])[0][0]]
             except(IndexError):
                index = [0]                    
             index.append(0)
             try:             
-                index.append(np.nonzero(par_values > pars_to_run[v])[0][0])
+                index.append(np.nonzero(par_values > (1+sensitivity/2)*pars_to_run[v])[0][0])
             except(IndexError):
                 index.append(0)
             
@@ -231,12 +231,12 @@ if analyse_results:
             # 2. Plot lower, ref and upper as a colored line, no markers
             ax.plot(array_x_sel, array_y_sel, color=('0.8'))
 
-            # 3. Plot lower as a hollow round and upper as solid round
+            # 3. Plot lower as triangle down  and upper as triangle up
             ax.plot(array_x_sel[0], array_y_sel[0], linestyle = 'None', 
-                    marker = 'o', markersize = 10,  
+                    marker = 'v', markersize = 13,  
                     markeredgecolor = c, markerfacecolor = c, label = k)
             ax.plot(array_x_sel[2], array_y_sel[2], linestyle = 'None', 
-                    marker = '*', markersize = 13, markerfacecolor = c,
+                    marker = '^', markersize = 13, markerfacecolor = c,
                     markeredgecolor = c)   
             
             color_index += 1
