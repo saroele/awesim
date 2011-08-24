@@ -506,7 +506,7 @@ class Simdex:
             # The next step is to separate parametes and variables from names and
             # initiate all attributes
             
-            self.__index_one_sim(sim)
+            self.index_one_sim(sim)
             print '%s indexed' % (sim.filename)        
             # The first simulation file is indexed and the attributes are 
             # initialised.  
@@ -527,7 +527,7 @@ class Simdex:
                     if self.simulationstart == time[0] and \
                         self.simulationstop == time[-1]:
                         # index this new simulation 
-                        self.__index_one_sim(sim)
+                        self.index_one_sim(sim)
                         print '%s indexed' % (sim.filename)
                                             
                     else:
@@ -554,7 +554,7 @@ class Simdex:
                     if self.simulationstart == time[0] and \
                         self.simulationstop == time[-1]:
                         # index this new simulation 
-                        self.__index_one_sim(sim)
+                        self.index_one_sim(sim)
                         print '%s indexed' % (sim.filename)
                     
                         # and finally, add the filename of the nicely indexed 
@@ -664,11 +664,11 @@ class Simdex:
 
 
         
-    def __index_one_sim(self, simulation):
+    def index_one_sim(self, simulation):
         '''
-        __index_one_sim(self, simulation)
+        index_one_sim(self, simulation)
         
-        This internal method adds the parameters and variables of simulation
+        This method adds the parameters and variables of simulation
         to the index of self.  
         simulation has to be a Simulation object
         '''
@@ -695,11 +695,12 @@ class Simdex:
                 except(ValueError):
                     # this variable was not found.  Add it in the right position
                     # keeping the list in sorted order
-                    pos = bisect.bisect_left(var, variables, lo=index)
+                    pos = bisect.bisect_left(variables, var, lo=index)
                     variables.insert(pos,var)
                     # make new row in variablemap and add '1' in the last column
                     varmap = np.insert(varmap, pos, 0, axis=0)
                     varmap[pos,-1] = 1
+                    pos+=1
             return variables, varmap, pos
                     
         # internal function to enhance readibility
@@ -724,17 +725,18 @@ class Simdex:
                     # search for it in parameters, but only in the part AFTER index
                     pos=parameters[index:].index(par)+index
                     parmap[pos,-1] = 1
-                    parvalues[index, -1] = parvalue
+                    parvalues[pos, -1] = parvalue
                 except(ValueError):
                     # this parameter was not found.  Add it in the right position
                     # keeping the list in sorted order
-                    pos = bisect.bisect_left(par, parameters, lo=index)
+                    pos = bisect.bisect_left(parameters, par, lo=index)
                     parameters.insert(pos,par)
                     # make new row in parametermap and add '1' in the last column
                     parmap = np.insert(parmap, pos, 0, axis=0)
                     parmap[pos,-1] = 1
                     parvalues = np.insert(parvalues, pos, 0, axis=0)
                     parvalues[pos,-1] = parvalue
+                    pos+=1
             return parameters, parmap, parvalues, pos
         
         # separate parameters from variables for simulation 
@@ -753,7 +755,6 @@ class Simdex:
            self.variablemap[:, 0] = 1
         
         else:
-            print "new simulation"
             # new simulation to be added to existing ones            
             # First, add the simulation filename to self.simulations            
             self.simulations.append(simulation.filename)            
@@ -777,12 +778,8 @@ class Simdex:
             
             position = 0            
             for par, parvalue in zip(simulation.parameters, simulation.parametervalues):
-                print par, parvalue
                 self.parameters, self.parametermap, self.parametervalues, position = index_one_par(self.parameters, self.parametermap, self.parametervalues, par, position, parvalue)
-                        
-            
-
-        print 'this function is NOT completed' 
+                
 
             
     def get_identical(self, simID):
