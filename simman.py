@@ -91,6 +91,11 @@ Most important methods (* = implemented):
 This info AND more details can be found in the docstrings of each of these
 classes, functions and methods
 
+Changes
+(see also https://github.com/saroele/Simulation-Management)
+
+20110823 - Sorting of parameters and variables for speed improvements
+
 """
 
 import numpy as np
@@ -100,6 +105,7 @@ import re
 import copy
 import matplotlib.pyplot as plt
 import cPickle as pickle
+import bisect
 #from enthought.traits.api import *
 #from enthought.traits.ui.api import *
 
@@ -141,12 +147,12 @@ class Simulation:
         # turn filename in an absolute path
         # no .mat extension needed, it is added by the scipy.io.loadmat method
         filename = os.path.abspath(filename)
-        
         try:
-            d = scipy.io.loadmat(filename, chars_as_strings = False) 
+            d = scipy.io.loadmat(filename, chars_as_strings = False)
             # if all goes well, d is a dictionary 
             
         except(UnicodeDecodeError):
+            print 'harm is awesome'
             raise
         
         # check the fields of d to make sure we're having a dymola file        
@@ -283,9 +289,9 @@ class Simulation:
         
         Separates variables from parameters and adds 2 lists and 1 numpy array 
         as attributes:
-            - list parameters
-            - list variables (timeseries)
-            - numpy array parametervalues
+            - list parameters (sorted)
+            - list variables (sorted)
+            - numpy array parametervalues 
         This method returns True if successfull
         '''
         # We create a loop over each of the elements in names, check if it is 
@@ -321,9 +327,13 @@ class Simulation:
                 print par_or_var
                 raise LookupError('Couldnt find this value in dataInfo')
             
-        self.parametervalues = np.array(parametervalues) 
-        self.parameters = parameters
+        
+        zipped = zip(parameters, parametervalues)
+        zipped.sort()
+        self.parametervalues = np.array([v for p,v in zipped]) 
+        self.parameters = [p for p,v in zipped]
         self.variables = variables
+        self.variables.sort()
         
         return True
 
@@ -663,6 +673,70 @@ class Simdex:
         simulation has to be a Simulation object
         '''
         
+        # internal function to enhance readibility
+        def index_one_var(variables, varmap, var, index):
+            """
+            Updates the variables and varmap with var, keeping everything sorted
+            Important: index is the position of the last found var in variables
+            
+            Returns the new variables, varmap and index
+            """
+            
+            
+            if var==variables[index]:
+                # var is the first element in variables, update varmap
+                varmap[index,-1] = 1
+                pos = index+1
+            else:
+                try:
+                    # search for it in variables, but only in the part AFTER index
+                    pos=variables[index:].index(var)+index
+                    varmap[pos,-1] = 1
+                except(ValueError):
+                    # this variable was not found.  Add it in the right position
+                    # keeping the list in sorted order
+                    pos = bisect.bisect_left(var, variables, lo=index)
+                    variables.insert(pos,var)
+                    # make new row in variablemap and add '1' in the last column
+                    varmap = np.insert(varmap, pos, 0, axis=0)
+                    varmap[pos,-1] = 1
+            return variables, varmap, pos
+                    
+        # internal function to enhance readibility
+        def index_one_par(parameters, parmap, parvalues, par, index, parvalue):
+            """
+            Updates the parameters, parvalues and parmap with par, 
+            keeping everything sorted.
+            Important: 
+                - index is the position of the last found par in parameters
+                - parvalue is the value of par 
+            
+            Returns the new parameters, parmap, parvalues and index
+            """
+          
+            if par==parameters[index]:
+                # par is the first element in parameters, update parmap, parvalues
+                parmap[index,-1] = 1
+                parvalues[index, -1] = parvalue
+                pos = index+1
+            else:
+                try:
+                    # search for it in parameters, but only in the part AFTER index
+                    pos=parameters[index:].index(par)+index
+                    parmap[pos,-1] = 1
+                    parvalues[index, -1] = parvalue
+                except(ValueError):
+                    # this parameter was not found.  Add it in the right position
+                    # keeping the list in sorted order
+                    pos = bisect.bisect_left(par, parameters, lo=index)
+                    parameters.insert(pos,par)
+                    # make new row in parametermap and add '1' in the last column
+                    parmap = np.insert(parmap, pos, 0, axis=0)
+                    parmap[pos,-1] = 1
+                    parvalues = np.insert(parvalues, pos, 0, axis=0)
+                    parvalues[pos,-1] = parvalue
+            return parameters, parmap, parvalues, pos
+        
         # separate parameters from variables for simulation 
         simulation.separate()
         
@@ -679,119 +753,37 @@ class Simdex:
            self.variablemap[:, 0] = 1
         
         else:
-            # add simulation to the set of previously indexed simulations
-            # newparameters and newvariables are arrays that will be updated for 
-            # each parameter or variable found.  At the end, they will tell us which
-            # parameters or variables are new
-            newpars = np.ones(len(simulation.parameters))
-            newvars = np.ones(len(simulation.variables))
+            print "new simulation"
+            # new simulation to be added to existing ones            
+            # First, add the simulation filename to self.simulations            
+            self.simulations.append(simulation.filename)            
             
             
+            # Second, make new columns for parametermap, parametervalues and 
+            # variablemap
+            self.parametermap = np.append(self.parametermap,
+                                          np.zeros((len(self.parameters), 1)),
+                                          axis=1)
+            self.parametervalues = np.append(self.parametervalues,
+                                          np.zeros((len(self.parameters), 1)),
+                                          axis=1)
+            self.variablemap = np.append(self.variablemap,
+                                          np.zeros((len(self.variables), 1)),
+                                          axis=1)                                          
             
-            # PARAMETERS 
-            # we run over all parameters already indexed in self.parameters
-            # parmap, varmap and parvalues will map the new simulation 
-            # for the already indexed parameters.  
-            # So they have length = len(self.parameters)
-            parmap = np.zeros((len(self.parameters), 1))
-            parvalues = np.zeros((len(self.parameters), 1))
+            position = 0            
+            for var in simulation.variables:
+                self.variables, self.variablemap, position = index_one_var(self.variables, self.variablemap, var, position)
             
+            position = 0            
+            for par, parvalue in zip(simulation.parameters, simulation.parametervalues):
+                print par, parvalue
+                self.parameters, self.parametermap, self.parametervalues, position = index_one_par(self.parameters, self.parametermap, self.parametervalues, par, position, parvalue)
+                        
             
-            for i in range(len(self.parameters)):
-                # we try to find the parameter in the list of parameters from the 
-                # new simulation
-                partofind = self.parameters[i]
-                try:
-                    position = simulation.parameters.index(partofind)
-                    # the next part is only executed if partofind is found 
-                    parmap[i] = 1
-                    parvalues[i] = simulation.parametervalues[position]
-                    # in newparameters we put 0 if we already indexed the parameter
-                    newpars[position] = 0
-                    
-                except(ValueError):
-                    # partofind is not found, that's fine 
-                    pass
-            # At the end of the finished for-loop just above, we still have to 
-            # add all the remaining parameters and their values
-            
-            newparameters = [x for (x, y) in zip(simulation.parameters, newpars) \
-                             if y == 1]
-            newparametervalues = [x for (x, y) in \
-                            zip(simulation.parametervalues, newpars) if y == 1]
-            
-            if len(newparameters) > 0:
-                # There ARE new parameters, update the attributes
-                # self.parameters
-                self.parameters.extend(newparameters)
-                
-                # self.parametermap
-                zeroparameters = np.zeros((len(newparameters), 
-                                           len(self.simulations)))
-                self.parametermap = np.append(self.parametermap, 
-                                              zeroparameters, axis = 0)
-                newparcolumn = np.append(parmap, np.ones(len(newparameters)))
-                newparcolumn.resize(len(parmap) + len(newparameters), 1)
-                self.parametermap = np.append(self.parametermap, 
-                                              newparcolumn, axis = 1)
-                
-                # self.parametervalues
-                self.parametervalues = np.append(self.parametervalues, 
-                                                 zeroparameters, axis = 0)
-                newparvaluescolumn = np.append(parvalues, 
-                                               np.array(newparametervalues))
-                newparvaluescolumn.resize(len(parvalues)+len(newparameters), 1)
-                self.parametervalues = np.append(self.parametervalues, \
-                    newparvaluescolumn, axis = 1)
-            else:
-                # there are no new parameters, just add the info from simulation 
-                # in the current index
-                self.parametermap = np.append(self.parametermap, parmap, axis = 1)
-                self.parametervalues = np.hstack((self.parametervalues, parvalues))
-    
-            # VARIABLES 
-            # we run over all variables already indexed in self.variables
-            # varmap will map the new simulation for the already indexed variables.
-            # So they have length = len(self.variables)
-            varmap = np.zeros((len(self.variables), 1))
-            
-            for i in range(len(self.variables)):
-                # we try to find the variables in the list of variables from the 
-                # new simulation
-                vartofind = self.variables[i]
-                try:
-                    position = simulation.variables.index(vartofind)
-                    # the next part is only executed if partofind is found 
-                    varmap[i] = 1
-                    # the found variables are deleted from the list
-                    newvars[position] = 0
-                except(ValueError):
-                    # vartofind is not found, that's fine 
-                    pass
-            newvariables = [x for (x, y) in zip(simulation.variables, newvars) \
-                            if y == 1]
-    
-            if len(newvariables) > 0:
-            
-                # self.variables
-                self.variables.extend(newvariables)
-                
-                # self.variablesmap
-                zerovariables = np.zeros((len(newvariables), len(self.simulations)))
-                self.variablemap = np.append(self.variablemap, 
-                                             zerovariables, axis = 0)
-                newvarcolumn = np.append(varmap, np.ones(len(newvariables)))
-                newvarcolumn.resize(len(newvarcolumn), 1)
-                self.variablemap = np.append(self.variablemap, 
-                                             newvarcolumn, axis = 1)
-                
-            else:
-                # no new variables, just add the info from simulation 
-                # in the current index
-                self.variablemap = np.append(self.variablemap, varmap, axis = 1)
-            
-            # and finally, add the simulation filename to self.simulations            
-            self.simulations.append(simulation.filename)
+
+        print 'this function is NOT completed' 
+
             
     def get_identical(self, simID):
         '''
@@ -1171,3 +1163,7 @@ def load_simdex(filename):
     
     result = pickle.load(open(filename,'rb'))
     return result
+    
+
+    
+    
