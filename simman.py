@@ -337,6 +337,57 @@ class Simulation:
         
         return True
 
+    def extract(self, var, arrays='sum'):
+        """Return dictionary with values of the variables/parameters to extract
+        
+        This method takes a dictionary as input with short_name/full_name pairs.
+        It returns a dictionary with short_name/value pairs, value = numpy array.
+        
+        Handling of arrays is implemented like this:
+            - for the array variables you wish to get, replace the [i] (i=int)
+              by [x].
+              Example: discFullDyn20.tabs.tabs[x].nakedTabs.C2.[1].C' 
+            - All values for all present 'x' will be extracted
+            - argument arrays defines what happens with these values:
+                - arrays='sum' (default): returns the sum of all values
+                - arrays='average' returns the average of all values
+                - arrays='each' : returns an array with all the values
+            - Attention, the array argument defines the action for ALL arrays.
+        
+        
+        First version 20010831, RDC
+        """
+        
+        
+                
+        r = {}
+        for short_name in var:
+            try:
+                r[short_name] = self.get_value(var[short_name])
+            except ValueError:
+                # the variable does not exist.  It's probably an array
+                long_name = var[short_name]
+                if long_name.find('[x]') == -1:
+                    raise ValueError(''.join([long_name, ' is not found. \n\
+                      Use "[x]" instead of the number for arrays\n']))
+                else:
+                    var_name = long_name.replace('[x]', '\[[0-9]*\]')
+                    # we make a list of all present array variables                    
+                    array_vars = self.exist(var_name)
+                    # we put all values in an array, as columns
+                    array = self.get_value(array_vars[0])
+                    for v in array_vars[1:]:
+                        array = np.column_stack((array, self.get_value(v)))                    
+                    if arrays == 'sum':
+                        r[short_name] = array.sum(axis=1)
+                    elif arrays == 'mean':
+                        r[short_name] = array.mean(axis=1)
+                    elif arrays == 'each':
+                        r[short_name] = array
+                    else:
+                        raise NotImplementedError('arrays='+arrays+' is an unvalid argument')    
+            
+        return r
 
 
 class Simdex:
