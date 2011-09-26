@@ -60,7 +60,7 @@ def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
 
 def set_par(parameter, value, dsin='', copy_to = None):
     """
-    This function depicts the change of a parametervalue in an existing dsin.txt
+    Change a parametervalue in an existing dsin.txt
     """
 
     if dsin == '':
