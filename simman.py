@@ -147,13 +147,14 @@ class Simulation:
         # turn filename in an absolute path
         # no .mat extension needed, it is added by the scipy.io.loadmat method
         filename = os.path.abspath(filename)
-        try:
-            d = scipy.io.loadmat(filename, chars_as_strings = False)
+        #try:
+        d = scipy.io.loadmat(filename, chars_as_strings = False)
             # if all goes well, d is a dictionary 
             
-        except(UnicodeDecodeError):
-            print 'harm is awesome'
-            raise
+        #except(UnicodeDecodeError):
+        #    print 'This error is caused by non-ascii characters in the .mat file\
+        #     like °C'
+            # raise
         
         # check the fields of d to make sure we're having a dymola file        
         try:
@@ -361,33 +362,85 @@ class Simulation:
         
                 
         r = {}
-        for short_name in var:
-            try:
-                r[short_name] = self.get_value(var[short_name])
-            except ValueError:
-                # the variable does not exist.  It's probably an array
-                long_name = var[short_name]
-                if long_name.find('[x]') == -1:
+        for short_name in var:        
+            long_name = var[short_name]
+            # check for array first            
+            if long_name.find('[x]') > -1:
+                var_name = long_name.replace('[x]', '\[[0-9]*\]')
+                # we make a list of all present array variables                    
+                array_vars = self.exist(var_name)
+                # we put all values in an array, as columns
+                array = self.get_value(array_vars[0])
+                for v in array_vars[1:]:
+                    array = np.column_stack((array, self.get_value(v)))                    
+                if arrays == 'sum':
+                    r[short_name] = array.sum(axis=1)
+                elif arrays == 'mean':
+                    r[short_name] = array.mean(axis=1)
+                elif arrays == 'each':
+                    r[short_name] = array
+                else:
+                    raise NotImplementedError('arrays='+arrays+' is an unvalid argument')    
+            else:        
+                try:
+                    r[short_name] = self.get_value(var[short_name])
+                except ValueError:
                     raise ValueError(''.join([long_name, ' is not found. \n\
                       Use "[x]" instead of the number for arrays\n']))
-                else:
-                    var_name = long_name.replace('[x]', '\[[0-9]*\]')
-                    # we make a list of all present array variables                    
-                    array_vars = self.exist(var_name)
-                    # we put all values in an array, as columns
-                    array = self.get_value(array_vars[0])
-                    for v in array_vars[1:]:
-                        array = np.column_stack((array, self.get_value(v)))                    
-                    if arrays == 'sum':
-                        r[short_name] = array.sum(axis=1)
-                    elif arrays == 'mean':
-                        r[short_name] = array.mean(axis=1)
-                    elif arrays == 'each':
-                        r[short_name] = array
-                    else:
-                        raise NotImplementedError('arrays='+arrays+' is an unvalid argument')    
-            
+                        
         return r
+        
+    def get_objects(self, mother=''):
+        """Get the names of the objects in a mother model
+        
+        Returns a list with the model names (part before the '.')
+        A mother name can be specified as a string (full name up to the model).
+        Example: mother = 'foo.fooBar'
+        If no mother model is specified, this method gets all the main objects, 
+        except 'Time'.
+        
+        If needed, speed can be improved by using sorted lists 
+        Doesn't work with arrays yet (to do that, excape the [ and ] 
+        in the mother name)
+        
+        First version: 20110906, RDC        
+        
+        """
+        
+        try:
+            test = self.variables
+        except AttributeError:
+            self.separate()
+        
+        objects = []
+        if mother == '':
+            search_in = copy.copy(self.variables)
+            search_in.extend(self.parameters)
+            search_in.remove('Time')
+            try:
+                search_in.remove('stateSelect')
+            except ValueError:
+                pass
+            index = 0
+        else:
+            # make the list with all variables and parameters in the mother model 
+            mother_dot = mother + '.'            
+            search_in = self.exist(mother_dot)
+            index = mother_dot.count('.')
+            
+        for v in search_in:    
+            potential_model = v.split('.')[index]
+            try:
+                objects.index(potential_model)
+            except ValueError:
+                objects.append(potential_model)
+        try:
+            objects.remove('stateSelect')
+        except ValueError:
+            pass
+                   
+        
+        return objects
 
 
 class Simdex:
@@ -1211,7 +1264,4 @@ def load_simdex(filename):
     
     result = pickle.load(open(filename,'rb'))
     return result
-    
-
-    
     

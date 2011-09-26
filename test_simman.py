@@ -253,6 +253,27 @@ class SimulationTest(unittest.TestCase):
         
         
         self.assertEqual(variables, sim.variables)
+        
+    def test_extract(self):
+        """to be implemented"""
+        pass
+
+    def test_get_objects(self):
+        """Test if get_objects works with empty mother model"""
+        
+        sim = Simulation('LinkedCapacities') 
+        obj = sim.get_objects()
+        obj_sorted = sorted(obj)
+        self.assertEqual(obj_sorted, sorted([u'c1', u'c2','r']))
+
+    def test_get_objects_with_mother(self):
+        """Test if get_objects works with empty mother model"""
+        
+        sim = Simulation('LinkedCapacities') 
+        obj = sim.get_objects(mother = 'c1')
+        obj_sorted = sorted(obj)
+        self.assertEqual(obj_sorted, sorted(['heatPort', 'C', u'T', u'der(T)']))                
+    
 
 class SimdexTest(unittest.TestCase):
     """
