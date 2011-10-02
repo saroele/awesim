@@ -85,8 +85,9 @@ def start_parametric_run(path):
     import os, subprocess
     
     os.chdir(path)
-    arguments = {'dymosim':'dymosim', 'dsin':'dsin.txt', 'result':'result.mat'}
-    oscmd = ' '.join([arguments['dymosim'], '-s', arguments['dsin'], arguments['result']])
+    # trying to make it work on the TME server
+    arguments = {'dymosim':'dymosim'}
+    oscmd = ' '.join([arguments['dymosim'], '-s'])
                       
     errormessage = ''
     try:    
@@ -180,30 +181,31 @@ def close_parametric_run(workdir, subdir):
     result_path = workdir + '\\results_pr'
     os.makedirs(result_path)
 
-    for i in range(len(subdir)):
-        resultfile_oldpath = subdir[i] + '\\result.mat'
-        resultfile_newpath = result_path + '\\result_run_' + str(i) + '.mat'
+    for folder in subdir:
+        run_id = folder.split('\\')[-1]
+        resultfile_oldpath = folder + '\\dsres.mat'
+        resultfile_newpath = result_path + '\\result_' + run_id + '.mat'
         existing = os.access(resultfile_oldpath, os.F_OK)        
         if  existing:
             copyfile(resultfile_oldpath,resultfile_newpath)
         else:
-            print 'Run_' + str(i) + ' failed to simulate.'
+            print run_id + ' failed to simulate.'
 
-        logfile_oldpath = subdir[i] + '\\dslog.txt'
-        logfile_newpath = result_path + '\\dslog_run_' + str(i) + '.txt'
+        logfile_oldpath = folder + '\\dslog.txt'
+        logfile_newpath = result_path + '\\dslog_' + run_id + '.txt'
         existing = os.access(logfile_oldpath, os.F_OK)        
         if  existing:
             copyfile(logfile_oldpath, logfile_newpath)
         else:
-            print 'Run_' + str(i) + ' did not even start ??!!'
+            print run_id + ' did not even start ??!!'
             
-        dsinfile_oldpath = subdir[i] + '\\dsin.txt'
-        dsinfile_newpath = result_path + '\\dsin_run_' + str(i) + '.txt'
+        dsinfile_oldpath = folder + '\\dsin.txt'
+        dsinfile_newpath = result_path + '\\dsin_' + run_id + '.txt'
         existing = os.access(dsinfile_oldpath, os.F_OK)        
         if  existing:
             copyfile(dsinfile_oldpath, dsinfile_newpath)
         else:
-            print 'Run_' + str(i) + ' did not even get a dsin.txt ??!!'            
+            print run_id + ' did not even get a dsin.txt ??!!'            
 
     for i in range(len(subdir)):
         existing = os.access(subdir[i], os.R_OK)        
