@@ -105,11 +105,7 @@ def set_parametric_run(path, dickie):
     parameters = dickie.keys()
     print 'The parameters are read from the dictionary,'
     # and one with all data
-    iterables = []
-    for i in range(len(dickie)):
-        iterables.append(dickie[parameters[i]])
-    else:
-        print 'all iterables have been depicted'
+    iterables = dickie.values()
     # from which we can calculate all combinations
     combination = []
     for i in itertools.product(*iterables):
@@ -118,16 +114,13 @@ def set_parametric_run(path, dickie):
         print 'and all combinations defined.'
     # for CPU time saving measures, we transofrm 'parameters' once for reading
     # in dsin.txt
-    parameters_dsin = []
-    for i in range(len(parameters)):
-        parameters_dsin.append('# ' + str(parameters[i]))
-    else:
-        print 'Parameter names are converted for reading in dsin.txt'
+    parameters_dsin = ['# ' + str(p) for p in parameters]
+
     # for which we can make a lot of new dsin.txt-files, copy them to a subfile
     # and make the file ready to run with a dymosim.exe and the input files.
     path_list = []    
-    for i in range(len(combination)):
-        path_run = set_simulation(path, parameters_dsin, combination[i], i)
+    for i,c in enumerate(combination):
+        path_run = set_simulation(path, parameters_dsin, c, i)
         path_list.append(path_run)
         print 'Setting simulation %s out of %s' %(i,len(combination))
     else:
@@ -237,9 +230,6 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     if dymosim == '':
         dymosim = 'dymosim.exe'
 
-    inputpath = path + '\\inputs_pr'
-    inputfiles = os.listdir(inputpath)
-
     dsin_file = open(dsin, 'r')
     file_data = dsin_file.readlines()
     dsin_file.close()
@@ -270,10 +260,7 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
         os.makedirs(dsin_to)
         copyfile('dsin_temp.txt', dsin_file)
         copyfile(dymosim, dymosim_file)
-        for i in range(len(inputfiles)):
-            old_path = inputpath + '\\' + inputfiles[i]
-            new_path = os.getcwd() + '\\run_' + str(copy_to) +'\\'+ inputfiles[i]
-            copyfile(old_path,new_path)
+
 
     return dsin_to
     
