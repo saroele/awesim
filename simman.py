@@ -367,6 +367,7 @@ class Simulation:
             # check for array first            
             if long_name.find('[x]') > -1:
                 var_name = long_name.replace('[x]', '\[[0-9]*\]')
+                var_name = var_name + '$'
                 # we make a list of all present array variables                    
                 array_vars = self.exist(var_name)
                 # we put all values in an array, as columns
