@@ -10,6 +10,7 @@ from subprocess import Popen
 import subprocess
 from simman import Simulation, Simdex
 from shutil import copyfile
+import copy
 
 def set_solver(solver, dsin = '', copy_to = None):
     """
@@ -59,7 +60,7 @@ def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
 
 def set_par(parameter, value, dsin='', copy_to = None):
     """
-    This function depicts the change of a parametervalue in an existing dsin.txt
+    Change a parametervalue in an existing dsin.txt
     """
 
     if dsin == '':
@@ -84,8 +85,9 @@ def start_parametric_run(path):
     import os, subprocess
     
     os.chdir(path)
-    arguments = {'dymosim':'dymosim', 'dsin':'dsin.txt', 'result':'result.mat'}
-    oscmd = ' '.join([arguments['dymosim'], '-s', arguments['dsin'], arguments['result']])
+    # trying to make it work on the TME server
+    arguments = {'dymosim':'dymosim'}
+    oscmd = ' '.join([arguments['dymosim'], '-s'])
                       
     errormessage = ''
     try:    
@@ -100,15 +102,11 @@ def start_parametric_run(path):
     return [errormessage, proc.returncode]    
 
 def set_parametric_run(path, dickie):
-    # we make a separte array of all parameter names
+    # we make a separate array of all parameter names
     parameters = dickie.keys()
     print 'The parameters are read from the dictionary,'
     # and one with all data
-    iterables = []
-    for i in range(len(dickie)):
-        iterables.append(dickie[parameters[i]])
-    else:
-        print 'all iterables have been depicted'
+    iterables = dickie.values()
     # from which we can calculate all combinations
     combination = []
     for i in itertools.product(*iterables):
@@ -117,11 +115,49 @@ def set_parametric_run(path, dickie):
         print 'and all combinations defined.'
     # for CPU time saving measures, we transofrm 'parameters' once for reading
     # in dsin.txt
-    parameters_dsin = []
-    for i in range(len(parameters)):
-        parameters_dsin.append('# ' + str(parameters[i]))
+    parameters_dsin = ['# ' + str(p) for p in parameters]
+
+    # for which we can make a lot of new dsin.txt-files, copy them to a subfile
+    # and make the file ready to run with a dymosim.exe and the input files.
+    path_list = []    
+    for i,c in enumerate(combination):
+        path_run = set_simulation(path, parameters_dsin, c, i)
+        path_list.append(path_run)
+        print 'Setting simulation %s out of %s' %(i,len(combination))
     else:
-        print 'Parameter names are converted for reading in dsin.txt'
+        print 'All simulations are set.'
+        
+    return path_list
+
+def set_sensitivity_run(path, dickie, deviation = 0.1):
+    # we make a separate array of all parameter names
+    # and one with all data
+    print 'The parameters are read from the dictionary'
+    parameters = dickie.keys()
+    defaults = dickie.values()
+    combination = [copy.copy(defaults)]
+ 
+    for index, item in enumerate(defaults):
+        if isinstance(item, int):
+            if item < (1./deviation):
+                lower = item-1
+                upper = item+1
+            else:
+                lower = int(round((1-deviation) * item))
+                upper = int(round((1+deviation) * item))
+        else:
+            lower = (1 - deviation) * item
+            upper = (1 + deviation) * item
+        new = copy.copy(defaults)
+        new[index]=lower
+        combination.append(copy.copy(new))
+        new[index]=upper
+        combination.append(new)
+    
+    # for CPU time saving measures, we transform 'parameters' once for reading
+    # in dsin.txt
+    parameters_dsin = ['# ' + str(p) for p in parameters]
+
     # for which we can make a lot of new dsin.txt-files, copy them to a subfile
     # and make the file ready to run with a dymosim.exe and the input files.
     path_list = []    
@@ -145,22 +181,31 @@ def close_parametric_run(workdir, subdir):
     result_path = workdir + '\\results_pr'
     os.makedirs(result_path)
 
-    for i in range(len(subdir)):
-        resultfile_oldpath = subdir[i] + '\\result.mat'
-        resultfile_newpath = result_path + '\\result_run_' + str(i) + '.mat'
+    for folder in subdir:
+        run_id = folder.split('\\')[-1]
+        resultfile_oldpath = folder + '\\dsres.mat'
+        resultfile_newpath = result_path + '\\result_' + run_id + '.mat'
         existing = os.access(resultfile_oldpath, os.F_OK)        
         if  existing:
             copyfile(resultfile_oldpath,resultfile_newpath)
         else:
-            print 'Run_' + str(i) + ' failed to simulate.'
+            print run_id + ' failed to simulate.'
 
-        logfile_oldpath = subdir[i] + '\\dslog.txt'
-        logfile_newpath = result_path + '\\dslog_run_' + str(i) + '.txt'
-        existing = os.access(resultfile_oldpath, os.F_OK)        
+        logfile_oldpath = folder + '\\dslog.txt'
+        logfile_newpath = result_path + '\\dslog_' + run_id + '.txt'
+        existing = os.access(logfile_oldpath, os.F_OK)        
         if  existing:
             copyfile(logfile_oldpath, logfile_newpath)
         else:
-            print 'Run_' + str(i) + ' did not even start ??!!'
+            print run_id + ' did not even start ??!!'
+            
+        dsinfile_oldpath = folder + '\\dsin.txt'
+        dsinfile_newpath = result_path + '\\dsin_' + run_id + '.txt'
+        existing = os.access(dsinfile_oldpath, os.F_OK)        
+        if  existing:
+            copyfile(dsinfile_oldpath, dsinfile_newpath)
+        else:
+            print run_id + ' did not even get a dsin.txt ??!!'            
 
     for i in range(len(subdir)):
         existing = os.access(subdir[i], os.R_OK)        
@@ -172,7 +217,7 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     This function sets everything ready for starting a new simulation based on
     the given parameters. 
     
-    path = the path where a dymosim.exe and dsin.txt
+    path = the path where a dymosim.exe and dsin.txt are waiting for you
     parameters = a list with the parameters to be changed in the input values
         these are already transformed for reading in dsin.txt by adding a '# '
     values = the values the depicted parameters need to get 
@@ -186,9 +231,6 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     
     if dymosim == '':
         dymosim = 'dymosim.exe'
-
-    inputpath = path + '\\inputs_pr'
-    inputfiles = os.listdir(inputpath)
 
     dsin_file = open(dsin, 'r')
     file_data = dsin_file.readlines()
@@ -220,10 +262,7 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
         os.makedirs(dsin_to)
         copyfile('dsin_temp.txt', dsin_file)
         copyfile(dymosim, dymosim_file)
-        for i in range(len(inputfiles)):
-            old_path = inputpath + '\\' + inputfiles[i]
-            new_path = os.getcwd() + '\\run_' + str(copy_to) +'\\'+ inputfiles[i]
-            copyfile(old_path,new_path)
+
 
     return dsin_to
     

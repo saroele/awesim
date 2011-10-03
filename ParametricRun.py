@@ -13,46 +13,48 @@ import numpy as np
 import pp
 from shutil import rmtree
 
-sys.path.append(os.path.abspath(r'D:\Ruben_BWK239\GIT_python'))
 import pymosim
 from simman import Simulation, Simdex
 
+sys.path.append(os.path.abspath(r'D:\Ruben_BWK239\GIT_python'))
 
 # Script settings #############################################################
-setup_and_run = True   
+setup = False
+run_it = False   
 get_results = True
 analyse_results = True
 
-# number of cpu's for the parametric run
-ncpus=3
-
-# directory of the parametric run.  Make sure it contains a dsin.txt and 
-# dymosim.exe and a subfolder 'inputs_pr' with all input files 
-work_dir = r'D:\Ruben_BWK239\IBPSA_parrun'
-
-# Specify here the parameters and values for the parametric run
-# format: list of ['long_name', [val1, ..., valn], 'short_name']
-pars = [
-#  [r'building_forGrid.heaSys.onOffDelay', [900, 2000], 'onOffDelay'],
-  [r'building_forGrid.heaSys.betaFactorHeatPump', [0.5,0.8], 'beta'],
-  [r'building_forGrid.whichUser',[3,30], 'user'],
-#  [r'building_forGrid.heaSys.volumeTank',[0.2,0.3, 0.4], 'vol_tank'],
-  [r'building_forGrid.heaSys.HPControl.dTSafetyTop',[3,4,5], 'dTSafetyTop']
-        ]
-# Specify the variables required for the analysis
-variables = dict(TMixed = u'building_forGrid.heaSys.dHW.TMixed',
-                 m_flowTotal = u'building_forGrid.heaSys.dHW.m_flowTotal',
-                 PEl = u'building_forGrid.heaSys.heatPump.PEl' )
-                 
-"""
-Remark: the x- and y-axis for the plots can be defined in the 'analyse_results'
-section (you can search for to_plot_x to get there).
-""" 
+if setup:
+    # number of cpu's for the parametric run
+    ncpus=3
+    
+    # directory of the parametric run.  Make sure it contains a dsin.txt and 
+    # dymosim.exe and a subfolder 'inputs_pr' with all input files 
+    work_dir = 'C:\\Workspace\\Modelica\\DeVloei\\Work\\ParRun'
+    
+    # Specify here the parameters and values for the parametric run
+    # format: list of ['long_name', [val1, ..., valn], 'short_name']
+    pars = [
+    #  [r'building_forGrid.heaSys.onOffDelay', [900, 2000], 'onOffDelay'],
+      [r'building_forGrid.heaSys.betaFactorHeatPump', [0.5,0.8], 'beta'],
+      [r'building_forGrid.whichUser',[3,30], 'user'],
+      [r'building_forGrid.heaSys.volumeTank',[0.2,0.3, 0.4], 'vol_tank'],
+      [r'building_forGrid.heaSys.HPControl.dTSafetyTop',[3,4,5], 'dTSafetyTop']
+            ]
+    # Specify the variables required for the analysis
+    variables = dict(TMixed = u'building_forGrid.heaSys.dHW.TMixed',
+                     m_flowTotal = u'building_forGrid.heaSys.dHW.m_flowTotal',
+                     PEl = u'building_forGrid.heaSys.heatPump.PEl' )
+                     
+    """
+    Remark: the x- and y-axis for the plots can be defined in the 'analyse_results'
+    section (you can search for to_plot_x to get there).
+    """ 
 
 ###############################################################################
 os.chdir(os.path.abspath(work_dir))
 
-if setup_and_run:
+if run_it:
     if os.path.exists(os.path.join(work_dir, 'results_pr')):
         remove_results = raw_input('Remove the results in results_pr ? (y/n) \n ==> ')
         if remove_results == 'y' or remove_results == 'Y':

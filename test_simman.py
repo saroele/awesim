@@ -225,11 +225,12 @@ class SimulationTest(unittest.TestCase):
 
         self.assertEqual([u'c1.C', u'c2.C', u'r.R'], sim.parameters)
         self.assertTrue((parameters == sim.parametervalues).all())
-        self.assertEqual([u'Time', u'c1.heatPort.T', u'c1.heatPort.Q_flow',
+        variables = sorted([u'Time', u'c1.heatPort.T', u'c1.heatPort.Q_flow',
                           u'c1.T', u'c1.der(T)', u'c2.heatPort.T',
                           u'c2.heatPort.Q_flow', u'c2.T', u'c2.der(T)',
                           u'r.heatPort_a.T',  u'r.heatPort_a.Q_flow',
-                          u'r.heatPort_b.T', u'r.heatPort_b.Q_flow'], 
+                          u'r.heatPort_b.T', u'r.heatPort_b.Q_flow'])       
+        self.assertEqual(variables, 
                           sim.variables) 
                           
     def test_separate_twice(self):
@@ -244,12 +245,35 @@ class SimulationTest(unittest.TestCase):
 
         self.assertEqual([u'c1.C', u'c2.C', u'r.R'], sim.parameters)
         self.assertTrue((parameters == sim.parametervalues).all())
-        self.assertEqual([u'Time', u'c1.heatPort.T', u'c1.heatPort.Q_flow',
+        variables = sorted([u'Time', u'c1.heatPort.T', u'c1.heatPort.Q_flow',
                           u'c1.T', u'c1.der(T)', u'c2.heatPort.T',
                           u'c2.heatPort.Q_flow', u'c2.T', u'c2.der(T)',
                           u'r.heatPort_a.T',  u'r.heatPort_a.Q_flow',
-                          u'r.heatPort_b.T', u'r.heatPort_b.Q_flow'], 
-                          sim.variables)
+                          u'r.heatPort_b.T', u'r.heatPort_b.Q_flow'])        
+        
+        
+        self.assertEqual(variables, sim.variables)
+        
+    def test_extract(self):
+        """to be implemented"""
+        pass
+
+    def test_get_objects(self):
+        """Test if get_objects works with empty mother model"""
+        
+        sim = Simulation('LinkedCapacities') 
+        obj = sim.get_objects()
+        obj_sorted = sorted(obj)
+        self.assertEqual(obj_sorted, sorted([u'c1', u'c2','r']))
+
+    def test_get_objects_with_mother(self):
+        """Test if get_objects works with empty mother model"""
+        
+        sim = Simulation('LinkedCapacities') 
+        obj = sim.get_objects(mother = 'c1')
+        obj_sorted = sorted(obj)
+        self.assertEqual(obj_sorted, sorted(['heatPort', 'C', u'T', u'der(T)']))                
+    
 
 class SimdexTest(unittest.TestCase):
     """
@@ -363,8 +387,8 @@ class SimdexTest(unittest.TestCase):
         
         simdex = Simdex()
         simdex.scan()
-        self.assertEqual(simdex.parameters[-1], 
-                         simdex.exist(simdex.parameters[-1])[0][0], 
+        self.assertEqual(u'c1.C', 
+                         simdex.exist('C1.c')[0][0], 
                          'Simdex.exist() does NOT return a present name')
         self.assertEqual(1, len(simdex.exist('c1')[0]), 
                          "sim.exist('c1') should return 1 parameter")
@@ -388,7 +412,7 @@ class SimdexTest(unittest.TestCase):
         """
         simdex = Simdex()
         simdex.scan()
-        n = 4
+        n = 1
         # set 1 value in the parametermap to 0
         par = simdex.parameters[n]
         npars = len(simdex.parameters)
@@ -399,7 +423,7 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(npars-1, simdex.parametermap.shape[0])
         self.assertEqual(npars-1, simdex.parametervalues.shape[0])
         self.assertEqual(nvars, len(simdex.variables))
-        simdex.variablemap[n, 0] = 0
+        simdex.variablemap[44, 0] = 0
         simdex.cleanup()
         self.assertEqual(nvars-1, len(simdex.variables))
         self.assertEqual(nvars-1, simdex.variablemap.shape[0])
