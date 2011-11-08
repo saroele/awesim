@@ -9,7 +9,7 @@ Created on Thu Jan 06 20:46:26 2011
 
 import numpy as np
 import unittest
-from os import getcwd, path
+from os import getcwd, path, remove
 from cStringIO import StringIO
 import sys
 import matplotlib
@@ -292,7 +292,7 @@ class SimdexTest(unittest.TestCase):
         sys.stdin = f
         
         self.cwd = getcwd()
-        # sims contains the simualations we expect to be in simdex in the 
+        # sims contains the simualations we expect to be in self.simdex in the 
         # current work directory        
         self.sims = []
         self.filenames = ['Array.mat', 'LinkedCapacities.mat', \
@@ -302,11 +302,20 @@ class SimdexTest(unittest.TestCase):
         self.filenames.sort()
         for fn in self.filenames:
             self.sims.append(path.join(self.cwd, fn))
+            
+        self.simdex = Simdex()
+        self.simdex.scan()    
                        
     def tearDown(self):
-        """ Restore back interactivity of keyboard """
+        """ Restore back interactivity of keyboard and close h5 file """
         sys.stdin = sys.__stdin__
-    
+        try:
+            self.simdex.h5.close()
+        except:
+            pass
+        if path.exists(path.join(getcwd(), 'simdex.h5')):
+            remove(path.join(getcwd(), 'simdex.h5'))
+        
     
     def test_init(self):
         """
@@ -322,59 +331,21 @@ class SimdexTest(unittest.TestCase):
             - 'LinkedCapacities_F.mat']
       
         """
-        simdex = Simdex()
-        simdex.scan()
-        filenames = simdex.get_filenames('path')
+        filenames = self.simdex.get_filenames('path')
         filenames.sort()
         self.assertEqual(self.sims, filenames)
+        self.simdex.h5.close()
         
         
-    def test_init_subfolder(self):
-       """ Test initiation from a different folder with absolute pathname"""
-       
-       folder = path.join(self.cwd, 'Subfolder')
-       simdex = Simdex(folder)
-       filenames = simdex.get_filenames()
-       filenames.sort()
-       self.assertEqual(self.filenames, filenames)
-       
-    def test_init_subfolder_with_spaces(self):
-       """ Test initiation from a folder with spaces with absolute pathname"""
-       
-       folder = path.join(self.cwd, 'A Subfolder with Spaces')
-       simdex = Simdex(folder)
-       filenames = simdex.get_filenames()
-       filenames.sort()
-       self.assertEqual(self.filenames, filenames)
-       
-    def test_init_array_big(self):
-       """ Test initiation with a large .mat file"""
-       
-       folder = path.join(self.cwd, 'SubfolderForArray_Big')
-       
-       try:
-            simdex = Simdex(folder)
-            self.assertEqual(path.join(folder, 'Array_Big.mat'), 
-                             simdex.get_filenames('path')[0])
-       except IOError:
-            print """
-            
-        !!!!!!!!!!!!!!!!!!!!  PAY ATTENTION !!!!!!!!!!!!!!!!!!!!
-        
-        Check if Array_Big.mat' is present in folder 
-        'SubfolderForArray_Big' of your work directory"
-        
-        If yes, this test did NOT succeed, even if you get OK!
-        """
-            
     def test_init_subfolder_with_crappy_files(self):
        """ Test initiation from a folder including wrong .mat files"""
        
        folder = path.join(self.cwd, 'SubfolderWithCrappyFiles')
-       simdex = Simdex(folder)
-       filenames = simdex.get_filenames()
+       self.simdex = Simdex(folder)
+       filenames = self.simdex.get_filenames()
        filenames.sort()
        self.assertEqual(self.filenames, filenames)
+       self.simdex.h5.close()
        
     def test_exist(self):
         """
@@ -385,22 +356,21 @@ class SimdexTest(unittest.TestCase):
         
         """
         
-        simdex = Simdex()
-        simdex.scan()
         self.assertEqual(u'c1.C', 
-                         simdex.exist('C1.c')[0][0], 
+                         self.simdex.exist('C1.c')[0][0], 
                          'Simdex.exist() does NOT return a present name')
-        self.assertEqual(1, len(simdex.exist('c1')[0]), 
+        self.assertEqual(1, len(self.simdex.exist('c1')[0]), 
                          "sim.exist('c1') should return 1 parameter")
-        self.assertEqual(1, len(simdex.exist('c1', 'par')), 
+        self.assertEqual(1, len(self.simdex.exist('c1', 'par')), 
                          "sim.exist('c1', 'par') should return 1 parameter")                 
-        self.assertEqual(4, len(simdex.exist('c1')[1]), 
+        self.assertEqual(4, len(self.simdex.exist('c1')[1]), 
                          "sim.exist('c1') should return 4 variables")
-        self.assertEqual(4, len(simdex.exist('c1', 'var')), 
+        self.assertEqual(4, len(self.simdex.exist('c1', 'var')), 
                          "sim.exist('c1', 'var') should return 4 variables")                 
-        self.assertEqual(u'Time', simdex.exist('time')[1][0], 
+        self.assertEqual(u'Time', self.simdex.exist('time')[1][0], 
                          'Simulation.exist() should ignore case' )
-        self.assertEqual([[],[]], simdex.exist('this does not exist'))
+        self.assertEqual([[],[]], self.simdex.exist('this does not exist'))
+        self.simdex.h5.close()
         
     def test_cleanup(self):
         """
@@ -410,24 +380,24 @@ class SimdexTest(unittest.TestCase):
         right one is gone
                 
         """
-        simdex = Simdex()
-        simdex.scan()
+
         n = 1
         # set 1 value in the parametermap to 0
-        par = simdex.parameters[n]
-        npars = len(simdex.parameters)
-        nvars = len(simdex.variables)
-        simdex.parametermap[n, 0] = 0
-        simdex.cleanup()
-        self.assertEqual(npars-1, len(simdex.parameters))
-        self.assertEqual(npars-1, simdex.parametermap.shape[0])
-        self.assertEqual(npars-1, simdex.parametervalues.shape[0])
-        self.assertEqual(nvars, len(simdex.variables))
-        simdex.variablemap[44, 0] = 0
-        simdex.cleanup()
-        self.assertEqual(nvars-1, len(simdex.variables))
-        self.assertEqual(nvars-1, simdex.variablemap.shape[0])
-        self.assertEqual(npars-1, simdex.parametervalues.shape[0])
+        par = self.simdex.parameters[n]
+        npars = len(self.simdex.parameters)
+        nvars = len(self.simdex.variables)
+        self.simdex.parametermap[n, 0] = 0
+        self.simdex.cleanup()
+        self.assertEqual(npars-1, len(self.simdex.parameters))
+        self.assertEqual(npars-1, self.simdex.parametermap.shape[0])
+        self.assertEqual(npars-1, self.simdex.parametervalues.shape[0])
+        self.assertEqual(nvars, len(self.simdex.variables))
+        self.simdex.variablemap[44, 0] = 0
+        self.simdex.cleanup()
+        self.assertEqual(nvars-1, len(self.simdex.variables))
+        self.assertEqual(nvars-1, self.simdex.variablemap.shape[0])
+        self.assertEqual(npars-1, self.simdex.parametervalues.shape[0])
+        self.simdex.h5.close()
     
     def test_get_simID(self):
         """
@@ -441,32 +411,32 @@ class SimdexTest(unittest.TestCase):
     def test_get_identical_single_result(self):
         """ Simdex.get_identical() for Array.mat should return only Array.mat"""
         
-        simdex = Simdex()
-        simdex.scan()
-        simID_array = simdex.get_simID('array')
-        simdex_array = simdex.get_identical(simID_array[0])
-        self.assertEqual(['Array.mat'], simdex_array.get_filenames(), 
+
+        simID_array = self.simdex.get_simID('array')
+        self.simdex_array = self.simdex.get_identical(simID_array[0])
+        self.assertEqual(['Array.mat'], self.simdex_array.get_filenames(), 
                          'get_identical on array should only return Array.mat')
         
-        # check if the simdex and sim objects have the same parameters
+        # check if the self.simdex and sim objects have the same parameters
         sim_array = Simulation('Array.mat')
         sim_array.separate()
         sim_array_pars = sim_array.parameters
         sim_array_pars.sort()
-        simdex_array_pars = simdex_array.parameters
-        simdex_array_pars.sort()
-        self.assertEqual(simdex_array_pars, sim_array_pars,
-                         'the simdex and sim objects should have the same \
+        self.simdex_array_pars = self.simdex_array.parameters
+        self.simdex_array_pars.sort()
+        self.assertEqual(self.simdex_array_pars, sim_array_pars,
+                         'the self.simdex and sim objects should have the same \
                          parameters')
         
-        # check if the simdex and sim objects have the same variables
+        # check if the self.simdex and sim objects have the same variables
         sim_array_vars = sim_array.variables
         sim_array_vars.sort()
-        simdex_array_vars = simdex_array.variables
-        simdex_array_vars.sort()
-        self.assertEqual(simdex_array_vars, sim_array_vars,
-                         'the simdex and sim objects should have the same \
+        self.simdex_array_vars = self.simdex_array.variables
+        self.simdex_array_vars.sort()
+        self.assertEqual(self.simdex_array_vars, sim_array_vars,
+                         'the self.simdex and sim objects should have the same \
                          variables')
+        self.simdex.h5.close()
 
     def test_get_identical_multiple_results(self):
         """ 
@@ -480,197 +450,192 @@ class SimdexTest(unittest.TestCase):
                 
         """
         
-        simdex = Simdex()
-        simdex.scan()
-        simID_lc = simdex.get_simID('_C')
-        simdex_lc = simdex.get_identical(simID_lc[0])
+
+        simID_lc = self.simdex.get_simID('_C')
+        self.simdex_lc = self.simdex.get_identical(simID_lc[0])
         exp_results = ['LinkedCapacities.mat', \
                    'LinkedCapacities_A.mat',  'LinkedCapacities_B.mat', \
                    'LinkedCapacities_C.mat', 'LinkedCapacities_D.mat', \
                    'LinkedCapacities_E.mat']
         exp_results.sort()
-        simdex_lc_fn = simdex_lc.get_filenames()
-        simdex_lc_fn.sort()
-        self.assertEqual(exp_results, simdex_lc_fn, 
+        self.simdex_lc_fn = self.simdex_lc.get_filenames()
+        self.simdex_lc_fn.sort()
+        self.assertEqual(exp_results, self.simdex_lc_fn, 
                          'get_identical on LinkedCapacities_C.mat should \
                          return the files mentioned in exp_results')
         
-        # check if the simdex and sim objects have the same parameters
+        # check if the self.simdex and sim objects have the same parameters
         sim_lc = Simulation('LinkedCapacities_A.mat')
         sim_lc.separate()
         sim_lc_pars = sim_lc.parameters
         sim_lc_pars.sort()
-        simdex_lc_pars = simdex_lc.parameters
-        simdex_lc_pars.sort()
-        self.assertEqual(simdex_lc_pars, sim_lc_pars,
-                         'the simdex and sim objects should have the same \
+        self.simdex_lc_pars = self.simdex_lc.parameters
+        self.simdex_lc_pars.sort()
+        self.assertEqual(self.simdex_lc_pars, sim_lc_pars,
+                         'the self.simdex and sim objects should have the same \
                          parameters')
         
-        # check if the simdex and sim objects have the same variables
+        # check if the self.simdex and sim objects have the same variables
         sim_lc_vars = sim_lc.variables
         sim_lc_vars.sort()
-        simdex_lc_vars = simdex_lc.variables
-        simdex_lc_vars.sort()
-        self.assertEqual(simdex_lc_vars, sim_lc_vars,
-                         'the simdex and sim objects should have the same \
+        self.simdex_lc_vars = self.simdex_lc.variables
+        self.simdex_lc_vars.sort()
+        self.assertEqual(self.simdex_lc_vars, sim_lc_vars,
+                         'the self.simdex and sim objects should have the same \
                          variables')
+                         
+        self.simdex.h5.close()
     
     def test_get_parameters(self):
         """Simdex.get_parameters() should return correct values"""
         
-        simdex = Simdex()
-        simdex.scan()
-        c1_C = simdex.get_parameters('c1.C')
+
+        c1_C = self.simdex.get_parameters('c1.C')
         c1_C.sort()
         exp_result_sorted = np.array([   0.,   600.,   600.,   800.,  
                                       800.,   800.,   800., 1000.])
         self.assertTrue((exp_result_sorted == c1_C).all())
+        self.simdex.h5.close()
     
     
     def test_filter_intvalues(self):
         """Simdex.filter() with integer values should work well"""
         
-        simdex = Simdex()
-        simdex.scan()
+
         filt_dic = {'c1.C': 800}
-        simdex_filtered = simdex.filter(filt_dic)
-        simdex_filtered_fn = simdex_filtered.get_filenames()
-        simdex_filtered_fn.sort()
+        self.simdex_filtered = self.simdex.filter(filt_dic)
+        self.simdex_filtered_fn = self.simdex_filtered.get_filenames()
+        self.simdex_filtered_fn.sort()
         exp_result = ['LinkedCapacities_A.mat',  'LinkedCapacities_D.mat', \
                    'LinkedCapacities_E.mat', 'LinkedCapacities_F.mat']
         exp_result.sort()
-        self.assertEqual(exp_result, simdex_filtered_fn,
-                         'filtering simdex with c1.C = 800 should return\
+        self.assertEqual(exp_result, self.simdex_filtered_fn,
+                         'filtering self.simdex with c1.C = 800 should return\
                          exp_result')
-        self.assertEqual(filt_dic, simdex_filtered.filterset,
+        self.assertEqual(filt_dic, self.simdex_filtered.filterset,
                          'After filtering, filterset has to be updated')
+        self.simdex.h5.close()
         
        
     def test_filter_nonexist_values(self):
         """Simdex.filter() with non-existent values should return False"""
         pass
         
-        simdex = Simdex()
-        simdex.scan()
         filt_dic = {'c1.C': 850} 
         filt_dic2 = {'c1.C': 800, 'r.R': 800}
-        self.assertRaises(ValueError, simdex.filter, filt_dic)
-        self.assertRaises(ValueError, simdex.filter, filt_dic2)
+        self.assertRaises(ValueError, self.simdex.filter, filt_dic)
+        self.assertRaises(ValueError, self.simdex.filter, filt_dic2)
+        self.simdex.h5.close()
         
     def test_filter_wildcard(self):
         """Simdex.filter() with '' values should return any sim having \
         that parameter"""
         
-        simdex = Simdex()
-        simdex.scan()
         filt_dic = {'c1.C': ''}
-        simdex_filtered = simdex.filter(filt_dic)
-        simdex_filtered_fn = simdex_filtered.get_filenames()
-        simdex_filtered_fn.sort()
+        self.simdex_filtered = self.simdex.filter(filt_dic)
+        self.simdex_filtered_fn = self.simdex_filtered.get_filenames()
+        self.simdex_filtered_fn.sort()
         exp_result = ['LinkedCapacities.mat', \
                    'LinkedCapacities_A.mat',  'LinkedCapacities_B.mat', \
                    'LinkedCapacities_C.mat', 'LinkedCapacities_D.mat', \
                    'LinkedCapacities_E.mat', 'LinkedCapacities_F.mat']
         exp_result.sort()
-        self.assertEqual(exp_result, simdex_filtered_fn,
-                         'filtering simdex with c1.C = '' should return\
+        self.assertEqual(exp_result, self.simdex_filtered_fn,
+                         'filtering self.simdex with c1.C = '' should return\
                          all LinkedCapacities*')
-        self.assertEqual(filt_dic, simdex_filtered.filterset,
+        self.assertEqual(filt_dic, self.simdex_filtered.filterset,
                          'After filtering, filterset has to be updated')
+        self.simdex.h5.close()
     
     def test_filter_twice(self):
         """ filtering twice should give correct end results and filterset"""
-        simdex = Simdex()
-        simdex.scan()
+
         filt_dic = {'c1.C': 800}
         filt_dic2 = {'r.R': 3}
-        simdex_filtered1 = simdex.filter(filt_dic)
-        simdex_filtered = simdex_filtered1.filter(filt_dic2)
-        simdex_filtered_fn = simdex_filtered.get_filenames()
-        simdex_filtered_fn.sort()
+        self.simdex_filtered1 = self.simdex.filter(filt_dic)
+        self.simdex_filtered = self.simdex_filtered1.filter(filt_dic2)
+        self.simdex_filtered_fn = self.simdex_filtered.get_filenames()
+        self.simdex_filtered_fn.sort()
         exp_result = ['LinkedCapacities_A.mat',  'LinkedCapacities_F.mat']
         exp_result.sort()
-        self.assertEqual(exp_result, simdex_filtered_fn,
-                         "filtering simdex with c1.C = 800 then with r.R = 3 \
+        self.assertEqual(exp_result, self.simdex_filtered_fn,
+                         "filtering self.simdex with c1.C = 800 then with r.R = 3 \
                          should return LinkedCapacities_A and _F")
-        self.assertEqual({'c1.C': 800, 'r.R': 3}, simdex_filtered.filterset,
+        self.assertEqual({'c1.C': 800, 'r.R': 3}, self.simdex_filtered.filterset,
                          'After filtering, filterset has to be updated')
+        self.simdex.h5.close()
         
     def test_filter_unchanged_original(self):
-        """simdex.filter() should not change simdex (bug and issue on github)"""
-        simdex = Simdex()
-        simdex.scan()
+        """self.simdex.filter() should not change self.simdex (bug and issue on github)"""
+
         filt_dic = {'c1.C': 800}
-        simdex_filtered = simdex.filter(filt_dic)
+        self.simdex_filtered = self.simdex.filter(filt_dic)
         
-        self.assertEqual({}, simdex.filterset,
+        self.assertEqual({}, self.simdex.filterset,
                         'Simdex.filter() should NOT change filterset of Simdex')
+        self.simdex.h5.close()
 
     def test_filter_floatvalues(self):
         """Simdex.filter() with float values should work well"""
         
-        simdex = Simdex()
-        simdex.scan()
+
         filt_dic = {'r.R': 8.15}
-        simdex_filtered = simdex.filter(filt_dic)
-        simdex_filtered_fn = simdex_filtered.get_filenames()
-        simdex_filtered_fn.sort()
+        self.simdex_filtered = self.simdex.filter(filt_dic)
+        self.simdex_filtered_fn = self.simdex_filtered.get_filenames()
+        self.simdex_filtered_fn.sort()
         exp_result = ['LinkedCapacities_E.mat']
         exp_result.sort()
-        self.assertEqual(exp_result, simdex_filtered_fn,
-                         'filtering simdex with r.R = 8.15 should return\
+        self.assertEqual(exp_result, self.simdex_filtered_fn,
+                         'filtering self.simdex with r.R = 8.15 should return\
                          exp_result')
-        self.assertEqual(filt_dic, simdex_filtered.filterset,
+        self.assertEqual(filt_dic, self.simdex_filtered.filterset,
                          'After filtering, filterset has to be updated')
+        self.simdex.h5.close()
     
     def test_plot(self):
         """Simdex.plot() should return [fig, lines, leg]"""
         
-        simdex = Simdex()
-        simdex.scan()
-        simdex_filtered = simdex.filter({'c1.C': ''})
-        [fig, lines, leg] = simdex_filtered.plot('c1.T')
+        self.simdex_filtered = self.simdex.filter({'c1.C': ''})
+        [fig, lines, leg] = self.simdex_filtered.plot('c1.T')
         self.assertTrue(isinstance(fig, matplotlib.figure.Figure))
         self.assertEqual(7, len(lines))
         for line in lines:
             self.assertTrue(isinstance(line, matplotlib.lines.Line2D))
         self.assertTrue(isinstance(leg, matplotlib.legend.Legend))
+        self.simdex.h5.close()
         
     def test_plot_nonexistent_variable(self):
         """Simdex.plot() should return ValueError if var not present in every sim"""
         
-        simdex = Simdex()
-        simdex.scan()
-        self.assertRaises(ValueError, simdex.plot, 'c1.T')
+        self.assertRaises(ValueError, self.simdex.plot, 'c1.T')
+        self.simdex.h5.close()
         
     def test_save_and_load(self):
-        """Saving and loading a simdex object should return exactly the same object"""
+        """Saving and loading a self.simdex object should return exactly the same object"""
         
-        simdex = Simdex()
-        simdex.scan()
-        simdex.save('Test_save.dat')
+        self.simdex.save('Test_save.dat')
         loaded = load_simdex('Test_save.dat')
-        for attr in simdex.__dict__:
-            exec("s = simdex." + attr)
+        for attr in self.simdex.__dict__:
+            exec("s = self.simdex." + attr)
             exec("l = loaded." + attr)
                    
             if isinstance(s, np.ndarray):
                 self.assertTrue((l == s).all())
             else: 
                 self.assertEqual(s, l)
+        self.simdex.h5.close()
     
     def test_scatterplot(self):
         """Simdex.scatterplot() should return [fig, lines, leg]"""
         
-        simdex = Simdex()
-        simdex.scan()
-        simdex_filtered = simdex.filter({'c1.C': ''})
-        [fig, lines, leg] = simdex_filtered.scatterplot('c1.T', 'c2.T')
+        self.simdex_filtered = self.simdex.filter({'c1.C': ''})
+        [fig, lines, leg] = self.simdex_filtered.scatterplot('c1.T', 'c2.T')
         self.assertTrue(isinstance(fig, matplotlib.figure.Figure))
         self.assertEqual(7, len(lines))
         for line in lines:
             self.assertTrue(isinstance(line, matplotlib.lines.Line2D))
-        self.assertTrue(isinstance(leg, matplotlib.legend.Legend))    
+        self.assertTrue(isinstance(leg, matplotlib.legend.Legend))  
+        self.simdex.h5.close()
         
     def test_remove(self):
         """ pretty straightforward, no test if no bugs are found"""
