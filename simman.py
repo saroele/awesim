@@ -546,6 +546,7 @@ class Simdex:
         
         if overwrite == 'y' or overwrite == 'Y':
             self.h5 = tbl.openFile(self.h5_path, 'w', title='Simdex file')
+            self.h5.close()
         else:
             raise NotImplementedError("Remove the file first !")
         # dictionary with the filters previously applied on this simdex
@@ -567,9 +568,14 @@ class Simdex:
         else:
             raise IOError('folder does not exist')
         
+        if self.h5.isopen:
+            self.h5.close()
 
     def _last_key(self):
         """Return the last key from the pytables file, or '' if empty file"""
+        
+        if not self.h5.isopen:
+            self.h5 = tbl.openFile(self.h5_path, 'a')
         
         try:        
             meta = self.h5.getNode(self.h5.root.Metadata)
@@ -596,9 +602,12 @@ class Simdex:
         Prints the Simdex object as a list of the indexed simulations
         with their simID's
         '''
-        print '\nSID     ', 'Filename\n'
-        for k in sorted(self.files.keys()):
-            print k, ' ', self.files[k]
+        
+        s= '\nSID     Filename\n'
+        for k in self.simulations:
+            s = ''.join([s, k, ' ', self.files[k], '\n'])
+            
+        return s
                     
     def scan(self, folder=''):
         """
@@ -662,7 +671,7 @@ class Simdex:
             # The first simulation file is indexed and the attributes are 
             # initialised.  
             self.index_one_sim(sim)
-            
+            print '%s indexed' % (sim.filename)
             ########################################################################
             # The next step is to index all remaining files
             
@@ -720,7 +729,7 @@ class Simdex:
                 
                 index += 1            
         
-        
+        self.h5.close()
                 
 
 
@@ -898,6 +907,9 @@ class Simdex:
                 SID = tbl.StringCol(itemsize=16)
                 path = tbl.StringCol(itemsize=160)
                 
+            if not self.h5.isopen:
+                self.h5 = tbl.openFile(self.h5_path, 'a')
+            
             # if it's the first simulation, we need to create the Metadata tbl
             try:
                 meta = self.h5.getNode(self.h5.root.Metadata)
@@ -973,26 +985,35 @@ class Simdex:
             for par, parvalue in zip(simulation.parameters, simulation.parametervalues):
                 self.parameters, self.parametermap, self.parametervalues, position = index_one_par(self.parameters, self.parametermap, self.parametervalues, par, position, parvalue)
                 
-
+            # this method can be called on itself: close the h5 file afterwards
+            self.h5.close()
             
-    def get_identical(self, simID):
+    def get_identical(self, SID):
         '''
-        get_identical(simID)
-        
-        simID = integer
+        Get list of simulations (SIDxxxx) with identical parameter and 
+        variable lists
         
         Create a new Simdex object from self with only those simulations 
         that have identical parameters and variables as simID
         '''
         
-        # Approache: copy self and remove the unneeded columns from 
+        # Approach: copy self and remove the unneeded columns from 
         # parametermap, parametervalues and variablemap by slicing
+        
+        # Make sure the h5 file is closed (for the deepcopy to work)
+        self.h5.close()
+        
+        try:
+            seqnb = self.simulations.index(SID)
+        except(ValueError):
+            print "This SID is not present in the simdex: %s" % SID
+            raise
         
         newsimdex = copy.deepcopy(self)
         newsimdex.simulations = []
         
-        parmap = self.parametermap[:, simID]
-        varmap = self.variablemap[:, simID]
+        parmap = self.parametermap[:, seqnb]
+        varmap = self.variablemap[:, seqnb]
         
         sims_to_keep = []
         
@@ -1126,9 +1147,14 @@ class Simdex:
     
     def cleanup(self):
         '''
-        cleanup removes unused parameters and unused variables from a simdex
-        object.
+        Removes unused parameters, variables and filenamesfrom a simdex
+               
         '''
+        
+        new_files = {}
+        for sid in self.simulations:
+            new_files[sid] = self.files[sid]
+        self.files = new_files
         
         pars_to_keep = np.any(self.parametermap, 1)
         self.parametermap = self.parametermap[pars_to_keep]
@@ -1272,27 +1298,28 @@ class Simdex:
         return [fig, lines, leg]
 
     
-    def get_simID(self, regex):
+    def get_SID(self, regex):
         '''
-        get_simID(regex)
+        Get the SID for a given search expression (regex)
         
         regex = regular expression, not case sensitive
         
-        Get a list of simulations of which the filenames match the regex
+        Return a list of simulations (SID) of which the filenames match the regex
         '''
         p = re.compile(regex, re.IGNORECASE)
         matches = []
-        simids = []
-        for i in range(len(self.simulations)):
-            m = p.search(self.simulations[i])
+        sids = []
+        # important: iterate always with self.simulations to keep the right order!!        
+        for k in self.simulations:
+            m = p.search(self.files[k])
             if m:
-                matches.append(self.simulations[i])
-                simids.append(i)
+                matches.append(self.files[k])
+                sids.append(k)
         
-        print 'simID', 'Filename\n'
-        for i, sim in zip(simids, matches):
+        print 'SID     ', 'Filename\n'
+        for i, sim in zip(sids, matches):
             print i, '   ', sim
-        return simids
+        return sids
         
     def remove(self, list_simIDs):
         """

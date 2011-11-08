@@ -399,9 +399,9 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(npars-1, self.simdex.parametervalues.shape[0])
         self.simdex.h5.close()
     
-    def test_get_simID(self):
+    def test_get_SID(self):
         """
-        check if Simdex.get_simID() returns correct simID
+        check if Simdex.get_SID() returns correct SID
         maybe this is not really an important check as it is indirectly 
         checked by the tests test_get_identical*
         
@@ -412,8 +412,8 @@ class SimdexTest(unittest.TestCase):
         """ Simdex.get_identical() for Array.mat should return only Array.mat"""
         
 
-        simID_array = self.simdex.get_simID('array')
-        self.simdex_array = self.simdex.get_identical(simID_array[0])
+        SID_array = self.simdex.get_SID('array')
+        self.simdex_array = self.simdex.get_identical(SID_array[0])
         self.assertEqual(['Array.mat'], self.simdex_array.get_filenames(), 
                          'get_identical on array should only return Array.mat')
         
@@ -451,8 +451,9 @@ class SimdexTest(unittest.TestCase):
         """
         
 
-        simID_lc = self.simdex.get_simID('_C')
-        self.simdex_lc = self.simdex.get_identical(simID_lc[0])
+        SID_lc = self.simdex.get_SID('_C')
+        
+        self.simdex_lc = self.simdex.get_identical(SID_lc[0])
         exp_results = ['LinkedCapacities.mat', \
                    'LinkedCapacities_A.mat',  'LinkedCapacities_B.mat', \
                    'LinkedCapacities_C.mat', 'LinkedCapacities_D.mat', \
