@@ -11,3 +11,4 @@ buildlog.txt
 /Subfolder/SubfolderForArray_Big/Array_Big.mat
 /Test_save.dat
 /SpeedInvestigations.xlsx
+*.dat

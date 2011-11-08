@@ -988,13 +988,14 @@ class Simdex:
             # this method can be called on itself: close the h5 file afterwards
             self.h5.close()
             
-    def get_identical(self, SID):
+    def filter_similar(self, SID):
         '''
-        Get list of simulations (SIDxxxx) with identical parameter and 
-        variable lists
+        Return a new simdex with similar simulations as SID (SIDxxxx)        
         
         Create a new Simdex object from self with only those simulations 
-        that have identical parameters and variables as simID
+        that have identical parameter and variable lists as SID.  This means
+        that we suppose the model is identical, but some parameters may have 
+        a different value
         '''
         
         # Approach: copy self and remove the unneeded columns from 
@@ -1037,9 +1038,58 @@ class Simdex:
         
         return newsimdex
 
+    def filter_selection(self, selection):
+        """
+        Return a new simdex containing only the SID's in selection.
+        
+        selection is a list with 'SIDxxxx' strings.
+        It DOES NOT have to be in the right order.
+        """
+        
+        # Make sure the h5 file is closed (for the deepcopy to work)
+        self.h5.close()
+        
+        newsimdex = copy.deepcopy(self)
+        newsimulations = []
+
+        for sid in self.simulations:
+            try:
+                selection.remove(sid)
+                newsimulations.append(sid)
+            except(ValueError):
+                pass
+        newsimdex.simulations = newsimulations
+        
+        newsimdex.cleanup()
+        return newsimdex
+
+    def filter_remove(self, selection):
+        """
+        Return a new simdex without the SID's in selection.
+        
+        selection is a list with 'SIDxxxx' strings.
+        It DOES NOT have to be in the right order.
+        """
+        
+        # Make sure the h5 file is closed (for the deepcopy to work)
+        self.h5.close()
+        
+        newsimdex = copy.deepcopy(self)
+
+        for sid in selection:
+            try:
+                newsimdex.simulations.remove(sid)
+            except(ValueError):
+                print "%s was not found in the simdex" % sid                
+                pass
+        
+        newsimdex.cleanup()
+        return newsimdex    
+    
+    
     def filter(self, pardic):
         '''
-        filter(pardic)
+        Return a new simdex, filtered with the criteria as in pardic
         
         pardic is a dictionary of parameter:value pairs
         If a value is omitted (empty string), all simulations that have any 
@@ -1221,7 +1271,7 @@ class Simdex:
         plotlegend = ''
         
         for s in range(len(simulations)):
-            sim = Simulation(simulations[s])
+            sim = Simulation(self.files[simulations[s]])
             if s == 0:
                 #only once: get time
                 time = sim.get_value('Time')
@@ -1274,7 +1324,7 @@ class Simdex:
         plotlegend = ''
         
         for s in range(len(simulations)):
-            sim = Simulation(simulations[s])
+            sim = Simulation(self.files[simulations[s]])
             stringske_X = 'simIDX_' + str(s) + \
                           "=sim.get_value('" + variable_X + "')"
             exec(stringske_X)
@@ -1300,7 +1350,7 @@ class Simdex:
     
     def get_SID(self, regex):
         '''
-        Get the SID for a given search expression (regex)
+        Get a list with SID's for a given search expression (regex)
         
         regex = regular expression, not case sensitive
         
@@ -1321,38 +1371,6 @@ class Simdex:
             print i, '   ', sim
         return sids
         
-    def remove(self, list_simIDs):
-        """
-        remove(list_simIDs)
-        
-        Remove all listed sims from the simdex.  If only 1 sim has to be removed
-        it can also be an integer instead of a list
-        """
-        
-        if isinstance(list_simIDs, int):
-            list_to_remove = [list_simIDs]
-        else:
-            list_to_remove = list_simIDs
-        
-        # make an array to slice with 
-        sims_to_keep = [True for x in self.simulations]        
-        for simID in list_to_remove:
-            sims_to_keep[simID] = False
-        
-        newsimdex = copy.deepcopy(self)
-        
-        s = np.array(sims_to_keep)
-        newsimdex.simulations = [x for (x,y) in zip(self.simulations, s) \
-                                    if y == True]
-        newsimdex.parametermap = newsimdex.parametermap[ : , s]
-        newsimdex.parametervalues = newsimdex.parametervalues[ : , s]
-        newsimdex.variablemap = newsimdex.variablemap[ : , s]
-        
-        # remove all empty rows and corresponding parameters/variables
-        newsimdex.cleanup()
-        
-        return newsimdex
-    
     
     def save(self, filename):
         """
@@ -1366,11 +1384,16 @@ class Simdex:
             # 'rb' stands for 'read, binary'
             
         """
-   
+        
+        # the h5 file raises errors, so let's remove it.  Anyway, we keep the 
+        # reference to it via the h5_path string
+        
+        del self.h5
+        print 'self.h5 removed'
 
         f = file(filename,'wb')
         # wb stands for 'write, binary'
-        pickle.dump(self, f, protocol = 1)
+        pickle.dump(self, f)
         f.close()
         
         return filename + ' created'
@@ -1379,5 +1402,7 @@ def load_simdex(filename):
     """load and return a previously saved Simdex object"""
     
     result = pickle.load(open(filename,'rb'))
+    result.h5 = tbl.openFile(result.h5_path, 'a')
+    result.h5.close()
     return result
     
