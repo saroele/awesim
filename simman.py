@@ -106,6 +106,7 @@ import copy
 import matplotlib.pyplot as plt
 import cPickle as pickle
 import bisect
+import tables as tbl
 #from enthought.traits.api import *
 #from enthought.traits.ui.api import *
 
@@ -512,14 +513,42 @@ class Simdex:
       it has the same keys)
 
     """
-    def __init__(self, folder=''):
+    
+    def __init__(self, folder='', h5='simdex.h5', verbose = False):
         '''
-        Creates a Simdex object.  
+        Create a Simdex object.  
+        
         Folder is a single folder to be sought for .mat files
-        If folder = '', the current work directory is indexed.
+        If folder = '', no work directory is indexed.
+        
+        h5 is the hdf5 file to which this simdex will be linked.
         '''
         # First, initialise some  attributes
+        if verbose == True:
+            self.verbose = True
+        else:
+            self.verbose = False
+        
+        # List with sim ID's, fixed id's for simulation filenames
+        # Format: SID1, SID2, SID3, ...        
         self.simulations = []
+        # dictionary with SIDx:path pairs (path are full pathnames)        
+        self.files = {}
+        
+        # The pytables file to which this simdex is linked
+        # Will be created in the current work directory, check first if it exists
+        self.h5_path = os.path.join(os.getcwd(), h5)
+        overwrite = 'y'        
+        if os.path.exists(self.h5_path):
+            print 'This file already exists: %s' % self.h5_path
+            overwrite = raw_input('Overwrite (Y/N)? : \n')
+            print '\n'
+        
+        if overwrite == 'y' or overwrite == 'Y':
+            self.h5 = tbl.openFile(self.h5_path, 'w', title='Simdex file')
+        else:
+            raise NotImplementedError("Remove the file first !")
+        # dictionary with the filters previously applied on this simdex
         self.filterset = dict()
 
         if folder == '' :
@@ -538,18 +567,39 @@ class Simdex:
         else:
             raise IOError('folder does not exist')
         
- 
 
+    def _last_key(self):
+        """Return the last key from the pytables file, or '' if empty file"""
+        
+        try:        
+            meta = self.h5.getNode(self.h5.root.Metadata)
+            return meta.cols.SID[-1]
+        except(tbl.NoSuchNodeError):
+            return ''
+            
+
+    def _gen_key(self):
+        '''Generate a new key, based on last key'''
+        
+        # get last key.  
+        last_key = self._last_key()
+        
+        if last_key == '':
+            return 'SID' + str(format(0, '04d'))
+        else:            
+            last_int = int(last_key.split('SID')[-1])
+            return 'SID' + str(format(last_int+1, '04d'))
+
+        
     def __str__(self):
         '''
         Prints the Simdex object as a list of the indexed simulations
         with their simID's
         '''
-        print '\nsimID', 'Filename\n'
-        for i in range(len(self.simulations)):
-            print i, '   ', self.simulations[i]
-        return ''
-            
+        print '\nSID     ', 'Filename\n'
+        for k in sorted(self.files.keys()):
+            print k, ' ', self.files[k]
+                    
     def scan(self, folder=''):
         """
         Scan the folder for .mat files that are simulation results, and 
@@ -608,13 +658,10 @@ class Simdex:
                     else:
                         print '%s is NOT indexed' % (sim.filename)
                 
-            # The next step is to separate parametes and variables from names and
-            # initiate all attributes
-            
-            self.index_one_sim(sim)
-            print '%s indexed' % (sim.filename)        
+
             # The first simulation file is indexed and the attributes are 
             # initialised.  
+            self.index_one_sim(sim)
             
             ########################################################################
             # The next step is to index all remaining files
@@ -624,7 +671,9 @@ class Simdex:
                 # We try to index the remaining .mat files one by one 
                 try:
                     sim = Simulation(full_path_filenames[index])
-                
+                except :
+                    pass
+                else:
                     # Now, check the simulation runtime against previously confirmed
                     # start and stop times
                     time = sim.get_value('Time')
@@ -639,9 +688,6 @@ class Simdex:
                         print '%s, runs from %d s till %d s, therefore, it is NOT \
                              indexed' % (sim.filename, time[0],time[-1])
                 
-                except :
-                    pass
-    
                 index += 1
         
         else:
@@ -651,7 +697,9 @@ class Simdex:
                 # We try to index the remaining .mat files one by one 
                 try:
                     sim = Simulation(full_path_filenames[index])
-                
+                except :
+                    pass
+                else:
                     # Now, check the simulation runtime against previously confirmed
                     # start and stop times
                     time = sim.get_value('Time')
@@ -670,9 +718,6 @@ class Simdex:
                         print '%s, runs from %d s till %d s, therefore, it is NOT \
                              indexed' % (sim.filename, time[0],time[-1])
                 
-                except :
-                    pass
-    
                 index += 1            
         
         
@@ -681,18 +726,16 @@ class Simdex:
 
     def get_filenames(self, form='filename'):
         """
-        get_filenames(format='rel')
-        Returns a list of the filenames (like self.simulations).
+        Return a list of the filenames
         
         form = 'filename' (default): only the filenames
         form = 'path' : full path name
         """
         
-        
         if form == 'path':
-            result = self.simulations
+            result = self.files.values()
         elif form == 'filename':
-            result = [os.path.split(x)[1] for x in self.simulations]
+            result = [os.path.split(x)[1] for x in self.files.values()]
         else:
             print 'form is not recognised'
             raise ValueError
@@ -844,26 +887,71 @@ class Simdex:
                     pos+=1
             return parameters, parmap, parvalues, pos
         
+        def update_h5(simulation, key):
+            """
+            Update the h5 file with the variables in the simulation object.
+            Later I have to add post processing to this function and 
+            extraction of metadata from the log
+            """
+            
+            class Meta(tbl.IsDescription):
+                SID = tbl.StringCol(itemsize=16)
+                path = tbl.StringCol(itemsize=160)
+                
+            # if it's the first simulation, we need to create the Metadata tbl
+            try:
+                meta = self.h5.getNode(self.h5.root.Metadata)
+            except(tbl.NoSuchNodeError):
+                meta = self.h5.createTable('/', 'Metadata', Meta, 
+                            title='All metadata for the simulations')
+            
+            row = meta.row
+            
+            row['SID'] = key
+            row['path'] = simulation.filename
+            row.append()
+            meta.flush
+            
+            # Now the variables
+            var_grp = self.h5.createGroup('/', key, title='All variables, as arrays')
+           
+            for v in simulation.variables:
+                name = v.replace('.', '_dot_')
+                self.h5.createArray(var_grp, name, simulation.get_value(v))
+                
+            self.h5.flush()
+        
         # separate parameters from variables for simulation 
         simulation.separate()
         
         if self.simulations == []:
             # this is the first simulation to be added to self
+           key = self._gen_key()            
+           self.simulations.append(key)
+           self.files[key] = simulation.filename
+           update_h5(simulation, key)
+           if self.verbose:
+               print "key = %s, filename = %s" % (key, self.files[key])
            self.parameters = simulation.parameters # a LIST
-           self.variables = simulation.variables  # a LIST
-           self.simulations.append(simulation.filename)
+           self.variables = simulation.variables  # a LIST           
            self.parametermap = np.ndarray((len(self.parameters), 1))
            self.parametermap[:, 0] = 1
            self.parametervalues = copy.copy(self.parametermap)
            self.parametervalues[:, 0] = np.array(simulation.parametervalues)
            self.variablemap = np.ndarray((len(self.variables), 1))
            self.variablemap[:, 0] = 1
+           
         
         else:
             # new simulation to be added to existing ones            
             # First, add the simulation filename to self.simulations            
-            self.simulations.append(simulation.filename)            
-            
+            key = self._gen_key()            
+            self.simulations.append(key)
+            self.files[key] = simulation.filename
+            update_h5(simulation, key)
+            if self.verbose:
+                print "self.simulations != []"
+                print "key = %s, filename = %s" % (key, self.files[key])
             
             # Second, make new columns for parametermap, parametervalues and 
             # variablemap
