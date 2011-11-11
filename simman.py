@@ -462,12 +462,13 @@ class Simdex:
         - self.variablemap (numpy array mapping which simulation has 
           which variables)
         - self.filterset (dictionary tracking all executed filter options on 
-          the current set) 
+          the current set)
+        - self.vardic (optional) a mapping of shortname:longname pairs for 
+          variables
+        - self.pardic (optional) a mapping of shortname:longname pairs for 
+          parameters
           
-        There is no attribute containing the variable values themselves because 
-        that would blow up the size of simdex.  These values are kept in the 
-        original .mat files and only extracted when needed
-
+        
     Most important methods (* = implemented):
 
     * __init__(folder): create simdex based from all .mat simulation files 
@@ -514,7 +515,7 @@ class Simdex:
 
     """
     
-    def __init__(self, folder='', h5='simdex.h5', verbose = False):
+    def __init__(self, folder='', h5='simdex.h5', vardic=None, pardic=None, verbose = False):
         '''
         Create a Simdex object.  
         
@@ -564,18 +565,23 @@ class Simdex:
         # here we get a list with all files in 'folder' that end with .mat
         
         elif os.path.exists(folder):
-            self.scan(folder)
+            self.scan(folder, vardic=vardic, pardic=pardic)
         else:
             raise IOError('folder does not exist')
         
         if self.h5.isopen:
             self.h5.close()
 
+    def openh5(self):
+        """Open the h5 file in append mode"""
+        if not self.h5.isopen:
+            self.h5 = tbl.openFile(self.h5_path, 'a')
+        
+    
     def _last_key(self):
         """Return the last key from the pytables file, or '' if empty file"""
         
-        if not self.h5.isopen:
-            self.h5 = tbl.openFile(self.h5_path, 'a')
+        self.openh5()
         
         try:        
             meta = self.h5.getNode(self.h5.root.Metadata)
@@ -609,7 +615,7 @@ class Simdex:
             
         return s
                     
-    def scan(self, folder=''):
+    def scan(self, folder='', vardic=None, pardic=None):
         """
         Scan the folder for .mat files that are simulation results, and 
         add them to the simdex
@@ -670,7 +676,7 @@ class Simdex:
 
             # The first simulation file is indexed and the attributes are 
             # initialised.  
-            self.index_one_sim(sim)
+            self.index_one_sim(sim, vardic=vardic, pardic=pardic)
             print '%s indexed' % (sim.filename)
             ########################################################################
             # The next step is to index all remaining files
@@ -690,7 +696,7 @@ class Simdex:
                     if self.simulationstart == time[0] and \
                         self.simulationstop == time[-1]:
                         # index this new simulation 
-                        self.index_one_sim(sim)
+                        self.index_one_sim(sim, vardic=vardic, pardic=pardic)
                         print '%s indexed' % (sim.filename)
                                             
                     else:
@@ -716,7 +722,7 @@ class Simdex:
                     if self.simulationstart == time[0] and \
                         self.simulationstop == time[-1]:
                         # index this new simulation 
-                        self.index_one_sim(sim)
+                        self.index_one_sim(sim, vardic=vardic, pardic=pardic)
                         print '%s indexed' % (sim.filename)
                     
                         # and finally, add the filename of the nicely indexed 
@@ -821,13 +827,20 @@ class Simdex:
 
 
         
-    def index_one_sim(self, simulation):
+    def index_one_sim(self, simulation, vardic=None, pardic=None):
         '''
-        index_one_sim(self, simulation)
+        Add a Simulation instanct to a Simdex instance
         
-        This method adds the parameters and variables of simulation
-        to the index of self.  
+        This method indexes a single simulation into the simdex.  All simdex
+        attributes are updated, and the h5 file is completed with the variables
+        defined in vardic.  .  
+        
         simulation has to be a Simulation object
+        vardic is a dictionary with shortname:fullname pairs
+        
+        Convention: in the h5 file, the short names are used, but with any '.'
+        replaced by '_dot_'.  The h5 file only contains variables, no parameters.
+        
         '''
         
         # internal function to enhance readibility
@@ -896,19 +909,15 @@ class Simdex:
                     pos+=1
             return parameters, parmap, parvalues, pos
         
-        def update_h5(simulation, key):
-            """
-            Update the h5 file with the variables in the simulation object.
-            Later I have to add post processing to this function and 
-            extraction of metadata from the log
-            """
+        
+        def add_meta(simulation, key):
+            """Create a node for the simulation and add data to /Metadata"""
             
             class Meta(tbl.IsDescription):
                 SID = tbl.StringCol(itemsize=16)
                 path = tbl.StringCol(itemsize=160)
                 
-            if not self.h5.isopen:
-                self.h5 = tbl.openFile(self.h5_path, 'a')
+            self.openh5()
             
             # if it's the first simulation, we need to create the Metadata tbl
             try:
@@ -924,12 +933,34 @@ class Simdex:
             row.append()
             meta.flush
             
-            # Now the variables
+            # Create the node for all variable arrays
             var_grp = self.h5.createGroup('/', key, title='All variables, as arrays')
+            
+            self.h5.flush()
+        
+        
+        def update_h5(simulation, key, vardic=None):
+            """
+            Update the h5 file with the variables in the simulation object.
+            Later I have to add post processing to this function and 
+            extraction of metadata from the log
+            """
+                        
+            var_grp = self.h5.getNode('/', key)
            
-            for v in simulation.variables:
-                name = v.replace('.', '_dot_')
-                self.h5.createArray(var_grp, name, simulation.get_value(v))
+            if vardic is None:
+                # add all variables, with full names
+                vardic = dict(zip(simulation.variables, simulation.variables))
+                update_h5(simulation, key, vardic=vardic)
+            else:
+                for shortname, longname in vardic.iteritems():
+                    name = shortname.replace('.', '_dot_')
+                    try:
+                        self.h5.createArray(var_grp, name, simulation.get_value(longname))
+                    except(ValueError):
+                        # this variable dos not exist in the simulation.  That
+                        # is no problem, just pass
+                        pass
                 
             self.h5.flush()
         
@@ -941,7 +972,8 @@ class Simdex:
            key = self._gen_key()            
            self.simulations.append(key)
            self.files[key] = simulation.filename
-           update_h5(simulation, key)
+           add_meta(simulation, key)
+           update_h5(simulation, key, vardic)
            if self.verbose:
                print "key = %s, filename = %s" % (key, self.files[key])
            self.parameters = simulation.parameters # a LIST
@@ -956,11 +988,12 @@ class Simdex:
         
         else:
             # new simulation to be added to existing ones            
-            # First, add the simulation filename to self.simulations            
+            # First, add the simulation key to self.simulations            
             key = self._gen_key()            
             self.simulations.append(key)
             self.files[key] = simulation.filename
-            update_h5(simulation, key)
+            add_meta(simulation, key)
+            update_h5(simulation, key, vardic)
             if self.verbose:
                 print "self.simulations != []"
                 print "key = %s, filename = %s" % (key, self.files[key])
@@ -988,6 +1021,19 @@ class Simdex:
             # this method can be called on itself: close the h5 file afterwards
             self.h5.close()
             
+            # finally, create or update self.vardic and self.pardic
+            if vardic is not None:
+                try:
+                    self.vardic.update(vardic)
+                except(AttributeError):
+                    self.vardic=vardic
+                    
+            if pardic is not None:
+                try:
+                    self.pardic.update(pardic)
+                except(AttributeError):
+                    self.pardic=pardic
+                
     def filter_similar(self, SID):
         '''
         Return a new simdex with similar simulations as SID (SIDxxxx)        
@@ -1217,14 +1263,112 @@ class Simdex:
         self.variablemap = self.variablemap[vars_to_keep]
         
 
-    def get_parameters(self, parameter):
+    def get(self, name):
+        """Return a dictionary with SID:value pairs for par or var name"""
+        
+        # There are many different options for name
+        found_name = False        
+        # 1. name is a short parameter name 
+        # ==> attribute the longname to name
+        try:
+            if self.pardic.has_key(name):
+                return self._get_par(self.pardic[name])
+        except(AttributeError):
+            pass
+        
+        # 2. it is a short variable name
+        # keep the short name cause that is the array name in the h5 file
+        if not found_name:
+            try:
+                if self.vardic.has_key(name):
+                    found_name = True        
+            except(AttributeError):
+                pass
+
+        # 3. it is a long parameter name
+        # keep it            
+        if not found_name:
+            try:
+                parindex = self.parameters.index(name)
+                found_name = True
+                return self._get_par(name)
+                
+            except:
+                pass
+            
+        # 4. Last option, it is a long variable name
+        # ==> two options: if it is in a vardic, use the short name, 
+        # else use it as it comes
+        if not found_name:
+            try:
+                varindex = self.variables.index(name)
+                found_name = True
+            except:
+                pass
+            else:
+                #it is a long variable name
+                try:
+                    for shortname, longname in self.vardic.iteritems():
+                        if name == longname:
+                            name = shortname
+                except(AttributeError):
+                    pass
+                
+        if not found_name:
+            raise NameError("%s was not found in this simdex" % name)
+        
+        # I have problems with copy.copy(), don't know why. 
+#        selection=[]
+#        for sid in self.simulations:
+#            selection.append(sid)
+#        print selection
+        result = self._get_var(name, selection=self.simulations)        
+        
+        return result
+        
+    def _get_var(self, var, selection=[]):
+        """Get values of variables"""
+        
+        self.openh5()
+        
+        values = {}
+        var_replaced = var.replace('.', '_dot_')
+        if selection == []:
+            selection = [n._v_name for n in self.h5.listNodes('/')]
+            
+        for node in self.h5.iterNodes('/'):
+            try:
+                # move on if this node is NOT in the selection
+                selection.index(node._v_name)
+                try:
+                    array = self.h5.getNode(node, name=var_replaced)
+                    values[node._v_name] = array.read()
+                except(tbl.NoSuchNodeError):
+                    # either the node is Metadata, or this variable does not
+                    # exist in this node (perfectly possible and normal)
+                    pass                    
+                    #raise tbl.NoSuchNodeError(var + " not found in node " + node._v_pathname)
+            except(ValueError):
+                if self.verbose:
+                    print " node not selected: ", node._v_name
+                pass
+            
+            
+       
+        self.h5.close()
+        return values        
+    
+    
+    
+    def _get_par(self, parameter):
         '''
-        get_parameters(parameter)
+        Return a dictionary with SID:parametervalue pairs
         
-        parameter = string with exact parameter name
+        This is a private method.  You should use get()
+        parameter = string with exact (long) parameter name. 
         
-        This method returns a list with simID, parvalues and simulation
-        filenames.  They are also printed on the screen
+        If a simulation does NOT have the parameter, the value in 
+        the dictionary is None
         '''
         
         parindex = self.parameters.index(parameter)
@@ -1233,12 +1377,19 @@ class Simdex:
 #        result = [range(1, len(self.simulations)),\
 #            self.parametervalues[parindex, 1:], self.simulations[1:]]
         
-        result = self.parametervalues[parindex, :]
+        presence = self.parametermap[parindex,:]        
+        value = self.parametervalues[parindex, :]
         # take care, first element is dummy value (zero)
         
-        print '\nsimID', parameter, 'Filename\n'
-        for i in range(len(self.simulations)):
-            print i, '   ', result[i], '  ', self.simulations[i]
+        result = {}
+        for i, sid in enumerate(self.simulations):
+            if presence[i] == 0:
+                result[sid] = None
+            elif presence[i] == 1:
+                result[sid] = value[i]
+            else:
+                raise NotImplementedError('It is not possible to have something\
+                  else than 0 or 1 in parametermap')
         
         return result
 

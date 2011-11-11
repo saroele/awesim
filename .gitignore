@@ -12,3 +12,4 @@ buildlog.txt
 /Test_save.dat
 /SpeedInvestigations.xlsx
 *.dat
+*.h5

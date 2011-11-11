@@ -335,7 +335,22 @@ class SimdexTest(unittest.TestCase):
         filenames.sort()
         self.assertEqual(self.sims, filenames)
         self.simdex.h5.close()
+
+    def test_init_with_vardic(self):
+        """
+        Tests if a Simdex object is created correctly when a vardic is passed
+      
+        """
         
+        vardic={'T2':'c2.T', 'dt2':'c[2].der(T)'}
+        self.simdex=Simdex(folder = getcwd(), vardic=vardic)        
+        
+        filenames = self.simdex.get_filenames('path')
+        filenames.sort()
+        self.assertEqual(self.sims, filenames)
+        self.assertEqual(self.simdex.vardic, vardic)
+
+        self.simdex.h5.close()        
         
     def test_init_subfolder_with_crappy_files(self):
        """ Test initiation from a folder including wrong .mat files"""
@@ -509,17 +524,7 @@ class SimdexTest(unittest.TestCase):
                          
         self.simdex.h5.close()
     
-    def test_get_parameters(self):
-        """Simdex.get_parameters() should return correct values"""
-        
-
-        c1_C = self.simdex.get_parameters('c1.C')
-        c1_C.sort()
-        exp_result_sorted = np.array([   0.,   600.,   600.,   800.,  
-                                      800.,   800.,   800., 1000.])
-        self.assertTrue((exp_result_sorted == c1_C).all())
-        self.simdex.h5.close()
-    
+  
     
     def test_filter_intvalues(self):
         """Simdex.filter() with integer values should work well"""
@@ -660,8 +665,47 @@ class SimdexTest(unittest.TestCase):
         self.assertTrue(isinstance(leg, matplotlib.legend.Legend))  
         self.simdex.h5.close()
         
+    def test_get_fullnames(self):
+        """Simdex.get() should return correctly for variables and parameters"""
+        
+        result = self.simdex.get('c2.T')
+        expectedsids = self.simdex.get_SID('linkedcapacities')
+        self.assertEqual(sorted(result.keys()), sorted(expectedsids))
+        sim = Simulation('LinkedCapacities_B.mat')
+        sid = self.simdex.get_SID('_B')[0]
+        self.assertTrue(np.all(result[sid]==sim.get_value('c2.T')))
+
+        # now a parameter
+        c1_C = self.simdex.get('c1.C').values()
+        c1_C.sort()
+        print '\n'*10, 'c1_C = ', c1_C
+        exp_result_sorted = [None,   600.,   600.,   800.,  
+                                      800.,   800.,   800., 1000.]
+        
+        self.assertEqual(exp_result_sorted , c1_C)
+        self.simdex.h5.close()
         
         
+    def test_get_shortnames(self):
+        """Simdex.get() should return correctly for shortnames too"""
+        
+        self.simdex.h5.close()
+        vardic = {'T2': 'c2.T'}
+        pardic = {'parc': 'c1.C'}
+        self.simdex = Simdex(folder=getcwd(), vardic=vardic, pardic=pardic)        
+        result = self.simdex.get('T2')
+        expectedsids = self.simdex.get_SID('linkedcapacities')
+        self.assertEqual(sorted(result.keys()), sorted(expectedsids))
+        sim = Simulation('LinkedCapacities_B.mat')
+        sid = self.simdex.get_SID('_B')[0]
+        self.assertTrue(np.all(result[sid]==sim.get_value('c2.T')))
+        
+        c1_C = self.simdex.get('parc').values()
+        c1_C.sort()
+        exp_result_sorted = [None,   600.,   600.,   800.,  
+                                      800.,   800.,   800., 1000.]
+        self.assertTrue(exp_result_sorted == c1_C)
+        self.simdex.h5.close()        
 #if __name__ == '__main__':
 #    unittest.main()
 
