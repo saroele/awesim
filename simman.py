@@ -5,9 +5,10 @@ This module contains tools to:
        .mat files, or having exactly the same structure
     2) keep track of a (unlimited) amount of these simulation output files
 
-Two classes are defined:
+Three classes are defined:
     1) Simulation
     2) Simdex
+    3) PPProc
 
 The main properties of those classes are discussed below.
 One function is also defined: load_simdex(filename).  This function loads the
