@@ -41,3 +41,4 @@ myclass=MyClass(dummyprocess)
 c= myclass.my_method(3, 5.67)
 print c
 
+simdex=Simdex()

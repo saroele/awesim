@@ -516,7 +516,7 @@ class Simdex:
 
     """
     
-    def __init__(self, folder='', h5='simdex.h5', vardic=None, pardic=None, verbose = False):
+    def __init__(self, folder='', h5='simdex.h5', process=None, verbose = False):
         '''
         Create a Simdex object.  
         
@@ -536,6 +536,9 @@ class Simdex:
         self.simulations = []
         # dictionary with SIDx:path pairs (path are full pathnames)        
         self.files = {}
+        
+        if process is not None:
+            self.process = process
         
         # The pytables file to which this simdex is linked
         # Will be created in the current work directory, check first if it exists
@@ -566,7 +569,7 @@ class Simdex:
         # here we get a list with all files in 'folder' that end with .mat
         
         elif os.path.exists(folder):
-            self.scan(folder, vardic=vardic, pardic=pardic)
+            self.scan(folder, process=process)
         else:
             raise IOError('folder does not exist')
         
@@ -616,7 +619,7 @@ class Simdex:
             
         return s
                     
-    def scan(self, folder='', vardic=None, pardic=None):
+    def scan(self, folder='', process=None):
         """
         Scan the folder for .mat files that are simulation results, and 
         add them to the simdex
@@ -677,7 +680,7 @@ class Simdex:
 
             # The first simulation file is indexed and the attributes are 
             # initialised.  
-            self.index_one_sim(sim, vardic=vardic, pardic=pardic)
+            self.index_one_sim(sim, process=process)
             print '%s indexed' % (sim.filename)
             ########################################################################
             # The next step is to index all remaining files
@@ -697,7 +700,7 @@ class Simdex:
                     if self.simulationstart == time[0] and \
                         self.simulationstop == time[-1]:
                         # index this new simulation 
-                        self.index_one_sim(sim, vardic=vardic, pardic=pardic)
+                        self.index_one_sim(sim, process=process)
                         print '%s indexed' % (sim.filename)
                                             
                     else:
@@ -723,7 +726,7 @@ class Simdex:
                     if self.simulationstart == time[0] and \
                         self.simulationstop == time[-1]:
                         # index this new simulation 
-                        self.index_one_sim(sim, vardic=vardic, pardic=pardic)
+                        self.index_one_sim(sim, process=process)
                         print '%s indexed' % (sim.filename)
                     
                         # and finally, add the filename of the nicely indexed 
@@ -828,7 +831,7 @@ class Simdex:
 
 
         
-    def index_one_sim(self, simulation, vardic=None, pardic=None):
+    def index_one_sim(self, simulation, process=None):
         '''
         Add a Simulation instanct to a Simdex instance
         
@@ -974,7 +977,11 @@ class Simdex:
            self.simulations.append(key)
            self.files[key] = simulation.filename
            add_meta(simulation, key)
-           update_h5(simulation, key, vardic)
+           if process is not None:
+               update_h5(simulation, key, vardic=self.process.variables)
+           else:
+               update_h5(simulation, key, vardic=None)
+               
            if self.verbose:
                print "key = %s, filename = %s" % (key, self.files[key])
            self.parameters = simulation.parameters # a LIST
@@ -994,7 +1001,10 @@ class Simdex:
             self.simulations.append(key)
             self.files[key] = simulation.filename
             add_meta(simulation, key)
-            update_h5(simulation, key, vardic)
+            if process is not None:
+               update_h5(simulation, key, vardic=self.process.variables)
+            else:
+               update_h5(simulation, key, vardic=None)
             if self.verbose:
                 print "self.simulations != []"
                 print "key = %s, filename = %s" % (key, self.files[key])
@@ -1023,17 +1033,18 @@ class Simdex:
             self.h5.close()
             
             # finally, create or update self.vardic and self.pardic
-            if vardic is not None:
-                try:
-                    self.vardic.update(vardic)
-                except(AttributeError):
-                    self.vardic=vardic
+            if process is not None:
+                if process.variables is not None:
+                    try:
+                        self.vardic.update(self.process.variables)
+                    except(AttributeError):
+                        self.vardic=self.process.variables
                     
-            if pardic is not None:
-                try:
-                    self.pardic.update(pardic)
-                except(AttributeError):
-                    self.pardic=pardic
+                if process.variables is not None:
+                    try:
+                        self.pardic.update(self.process.parameters)
+                    except(AttributeError):
+                        self.pardic=self.process.parameters
                 
     def filter_similar(self, SID):
         '''
@@ -1622,6 +1633,7 @@ class Process(object):
         
         for m in self.mothers:
             for s in self.pp:
+                print m, s
                 
     
 

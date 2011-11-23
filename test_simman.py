@@ -336,19 +336,19 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(self.sims, filenames)
         self.simdex.h5.close()
 
-    def test_init_with_vardic(self):
+    def test_init_with_process(self):
         """
-        Tests if a Simdex object is created correctly when a vardic is passed
+        Tests if a Simdex object is created correctly when a process is passed
       
         """
         
-        vardic={'T2':'c2.T', 'dt2':'c[2].der(T)'}
-        self.simdex=Simdex(folder = getcwd(), vardic=vardic)        
+        process=Process(variables={'T2':'c2.T', 'dt2':'c[2].der(T)'})
+        self.simdex=Simdex(folder = getcwd(), process=process)        
         
         filenames = self.simdex.get_filenames('path')
         filenames.sort()
         self.assertEqual(self.sims, filenames)
-        self.assertEqual(self.simdex.vardic, vardic)
+        self.assertEqual(self.simdex.vardic, {'Time':'Time','T2':'c2.T', 'dt2':'c[2].der(T)'})
 
         self.simdex.h5.close()        
         
@@ -692,7 +692,8 @@ class SimdexTest(unittest.TestCase):
         self.simdex.h5.close()
         vardic = {'T2': 'c2.T'}
         pardic = {'parc': 'c1.C'}
-        self.simdex = Simdex(folder=getcwd(), vardic=vardic, pardic=pardic)        
+        process=Process(parameters=pardic, variables=vardic)
+        self.simdex = Simdex(folder=getcwd(), process=process)        
         result = self.simdex.get('T2')
         expectedsids = self.simdex.get_SID('linkedcapacities')
         self.assertEqual(sorted(result.keys()), sorted(expectedsids))
@@ -745,8 +746,8 @@ class ProcessTest(unittest.TestCase):
 suite1 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 suite3 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
-alltests = unittest.TestSuite([suite3])
+alltests = unittest.TestSuite([suite1, suite2, suite3])
 
-unittest.TextTestRunner(verbosity=1).run(alltests)
+unittest.TextTestRunner(verbosity=1, failfast=True).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
 
