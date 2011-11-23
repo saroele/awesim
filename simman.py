@@ -8,7 +8,7 @@ This module contains tools to:
 Three classes are defined:
     1) Simulation
     2) Simdex
-    3) PPProc
+    3) Process
 
 The main properties of those classes are discussed below.
 One function is also defined: load_simdex(filename).  This function loads the
@@ -1550,6 +1550,64 @@ class Simdex:
         
         return filename + ' created'
         
+
+class Process(object):
+    """
+    Class defining pre- and post processing of a simulation
+    
+    """
+    
+    def __init__(self, mothers=None, parameters=None, sub_pars=None, variables=None,
+                 sub_vars=None, pp=None):
+        """Instantiate the Process object
+        
+        Not all possible cases implemented yet
+        
+        """
+        
+        # make/complete the variables and parameter dicts, full paths
+        if variables is None:
+            self.variables = {}
+        else:
+            self.variables = variables
+        self.variables['Time'] = 'Time' 
+        
+        if parameters is None:
+            self.parameters = {} 
+        else:
+            self.parameters = parameters
+               
+        if mothers is not None:
+            self.mothers = mothers
+            for m in self.mothers:
+                for shortname, longname in sub_vars.iteritems():
+                    self.variables['_'.join([m, shortname])] = '.'.join([m, longname])
+                for shortname, longname in sub_pars.iteritems():
+                    self.parameters['_'.join([m, shortname])] = '.'.join([m, longname])
+        else:
+            self.mothers = []
+        # paramaeters = contains short and long names of the parameters we need.
+        # The data will be extracted from the .mat files and put in a dictionary
+        # The short names will be the keys in that dictionary     
+        
+        self.pp = pp
+        
+    def __str__(self):
+        """Return a print string"""
+        
+        s = '\n'+79*'-'+'\n'
+        s += 'The content of this Process object is:\n'
+        
+        return s
+        
+    
+    
+
+    
+
+
+
+
 def load_simdex(filename):
     """load and return a previously saved Simdex object"""
     

@@ -13,7 +13,7 @@ from os import getcwd, path, remove
 from cStringIO import StringIO
 import sys
 import matplotlib
-from simman import Simulation, Simdex, load_simdex
+from simman import Simulation, Simdex, Process, load_simdex
 
 
 class SimulationTest(unittest.TestCase):
@@ -709,9 +709,42 @@ class SimdexTest(unittest.TestCase):
 #if __name__ == '__main__':
 #    unittest.main()
 
+class ProcessTest(unittest.TestCase):
+    """
+    Class for testing the class simman.Process
+    """
+
+    def setUp(self):
+        self.mothers=['c1', 'c2']
+        self.parameters={'cap1':'c1.C', 'res':'r.R'}
+        self.sub_pars={'cap':'C'}
+        self.variables={}
+        self.sub_vars={'Qflow':'heatPort.Q_flow'}
+        
+
+    def test_init1(self):
+        """init process without attributes"""
+        
+        p = Process()
+        self.assertEqual(p.mothers, [])
+        
+    def test_init2(self):
+        """init process without attributes"""
+        
+        p = Process(mothers=self.mothers, parameters=self.parameters, 
+                    sub_pars=self.sub_pars, variables=self.variables, 
+                    sub_vars=self.sub_vars)
+        self.assertEqual(p.parameters, {'cap1':'c1.C', 'res':'r.R',
+                                        'c1_cap':'c1.C', 'c2_cap':'c2.C'})        
+        self.assertEqual(p.variables, {'Time':'Time', 
+                                       'c1_Qflow':'c1.heatPort.Q_flow',
+                                       'c2_Qflow':'c2.heatPort.Q_flow'}) 
+        print p
+
 suite1 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
-alltests = unittest.TestSuite([suite1, suite2])
+suite3 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
+alltests = unittest.TestSuite([suite3])
 
 unittest.TextTestRunner(verbosity=1).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
