@@ -1550,6 +1550,9 @@ class Simdex:
         
         return filename + ' created'
         
+    def postproc(self):
+        pass
+        
 
 class Process(object):
     """
@@ -1597,10 +1600,29 @@ class Process(object):
         
         s = '\n'+79*'-'+'\n'
         s += 'The content of this Process object is:\n'
+        s += 'Parameters:'
+        for shortname,longname in sorted(self.parameters.iteritems()):
+            s += '\t'.join(['\n', shortname ,'=', longname])
+        
+        s += '\n\nVariables:'
+        for shortname,longname in sorted(self.variables.iteritems()):
+            s += '\t'.join(['\n', shortname ,'=', longname])
+        
+        s += '\n\nPost-processing:\n'        
+        if self.pp is not None:
+            ppprint = '\n'.join(self.pp)
+        else:
+            ppprint = '\nNo post-processing defined\n'
+        s += ppprint
         
         return s
         
-    
+    def postproclist(self):
+        """Return a list with all post-processing actions as strings"""
+        
+        for m in self.mothers:
+            for s in self.pp:
+                
     
 
     

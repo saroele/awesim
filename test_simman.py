@@ -720,6 +720,7 @@ class ProcessTest(unittest.TestCase):
         self.sub_pars={'cap':'C'}
         self.variables={}
         self.sub_vars={'Qflow':'heatPort.Q_flow'}
+        self.pp=['Qflow10 = 10 * Qflow']
         
 
     def test_init1(self):
@@ -733,7 +734,7 @@ class ProcessTest(unittest.TestCase):
         
         p = Process(mothers=self.mothers, parameters=self.parameters, 
                     sub_pars=self.sub_pars, variables=self.variables, 
-                    sub_vars=self.sub_vars)
+                    sub_vars=self.sub_vars, pp=self.pp)
         self.assertEqual(p.parameters, {'cap1':'c1.C', 'res':'r.R',
                                         'c1_cap':'c1.C', 'c2_cap':'c2.C'})        
         self.assertEqual(p.variables, {'Time':'Time', 
