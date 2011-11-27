@@ -273,7 +273,34 @@ class SimulationTest(unittest.TestCase):
         obj = sim.get_objects(mother = 'c1')
         obj_sorted = sorted(obj)
         self.assertEqual(obj_sorted, sorted(['heatPort', 'C', u'T', u'der(T)']))                
-    
+
+    def test_postprocess_nopp(self):
+        """Try a basic extraction via a post processing on a simulation"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'})
+        result_pp = sim.postprocess(process)
+        self.assertTrue(result_pp.has_key('c1_T'))
+        
+    def test_postprocess_mothers(self):
+        """Try a basic postprocessing with mothers on a simulation"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15'])
+        result_pp = sim.postprocess(process)
+        self.assertTrue(np.all(result_pp['c1_T_degC'] == result_pp['c1_T']+273.15))
+        self.assertEqual(result_pp['c1_cap'], 600.0)
+        
+    def test_postprocess_nomothers(self):
+        """Try a basic postprocessing without mothers on a simulation"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'},
+                          pp = ['timehours = Time / 3600'])
+        result_pp = sim.postprocess(process)
+        self.assertTrue(np.all(result_pp['timehours']==result_pp['Time']/3600))
 
 class SimdexTest(unittest.TestCase):
     """
@@ -730,6 +757,13 @@ class ProcessTest(unittest.TestCase):
         p = Process()
         self.assertEqual(p.mothers, [])
         
+    def test_init3(self):
+        """init Process with only variables should work"""
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'})
+        self.assertEqual(process.variables, {'Time':'Time',
+                                             'c1_T':'c1.T', 'c2_T':'c2.T'})
+
+
     def test_init2(self):
         """init process without attributes"""
         

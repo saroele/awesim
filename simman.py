@@ -139,13 +139,14 @@ class Simulation:
     
     """
     
-    def __init__(self, filename):
+    def __init__(self, filename, verbose = False):
         ''' 
         Create a Simulation object from a .mat file
         The filename can be an absolute path, or a filename in the current work
         directory, but it must NOT have a .mat extension.
         '''
         
+        self.verbose = verbose        
         # turn filename in an absolute path
         # no .mat extension needed, it is added by the scipy.io.loadmat method
         filename = os.path.abspath(filename)
@@ -357,8 +358,11 @@ class Simulation:
                 - arrays='each' : returns an array with all the values
             - Attention, the array argument defines the action for ALL arrays.
         
+        If a long_name is not found, the method passes on, no exception raised!
         
-        First version 20010831, RDC
+        First version 20110831, RDC
+        
+        20111123 - raise no exception if a variable is not found
         """
         
         
@@ -373,23 +377,29 @@ class Simulation:
                 # we make a list of all present array variables                    
                 array_vars = self.exist(var_name)
                 # we put all values in an array, as columns
-                array = self.get_value(array_vars[0])
-                for v in array_vars[1:]:
-                    array = np.column_stack((array, self.get_value(v)))                    
-                if arrays == 'sum':
-                    r[short_name] = array.sum(axis=1)
-                elif arrays == 'mean':
-                    r[short_name] = array.mean(axis=1)
-                elif arrays == 'each':
-                    r[short_name] = array
+                try:
+                    array = self.get_value(array_vars[0])
+                except(ValueError):
+                    # The array was not found: just pass to the next
+                    pass
                 else:
-                    raise NotImplementedError('arrays='+arrays+' is an unvalid argument')    
-            else:        
+                    for v in array_vars[1:]:
+                        array = np.column_stack((array, self.get_value(v)))                    
+                    if arrays == 'sum':
+                        r[short_name] = array.sum(axis=1)
+                    elif arrays == 'mean':
+                        r[short_name] = array.mean(axis=1)
+                    elif arrays == 'each':
+                        r[short_name] = array
+                    else:
+                        raise NotImplementedError('arrays='+arrays+' is an unvalid argument')    
+            else: 
+                # the variable is NO array
                 try:
                     r[short_name] = self.get_value(var[short_name])
                 except ValueError:
-                    raise ValueError(''.join([long_name, ' is not found. \n\
-                      Use "[x]" instead of the number for arrays\n']))
+                    # the variable is not found.  No problem, pass to the next.                    
+                    pass
                         
         return r
         
@@ -445,6 +455,64 @@ class Simulation:
         
         return objects
 
+
+    def postprocess(self, process):
+        """Return a dictionary with results as defined in process"""
+        
+        def convert(string):
+            """
+            Return a dictionary with shortname/value pairs 
+            as result of a single postprocessing line string
+            """
+
+            returndic = {}
+            splitted = string.split(' ')
+            # First check if we need to loop over the mothers
+            apply_on_mothers = False
+            for i in splitted:
+                # now we will treat each part of the string individually
+                if process.sub_vars.has_key(i) or process.sub_pars.has_key(i):
+                    apply_on_mothers = True
+                    break
+            
+            # Now process the string            
+            if not apply_on_mothers:
+                # evaluate the string, and by passing the result dictionary 
+                # as locals, the variables are known                
+                returndic[splitted[0]] = eval(' '.join(splitted[2:]), globals(), result)
+            else:
+                # we need to find all variables and add the mothers to them
+                for m in process.mothers:    
+                    composed = []
+                    newvar = '_'.join([m,splitted[0]]).replace('.','_')
+                    for s in splitted[2:]:
+                        fullname = '_'.join([m,s]).replace('.','_')
+                        if result.has_key(fullname):
+                            # a variable we need to get
+                            composed.append(fullname)
+                        else:
+                            composed.append(s)
+                    if self.verbose:
+                        print 'composed string: ', newvar, ' = ', ' '.join(composed)
+                    returndic[newvar] = eval(' '.join(composed), globals(), result)
+                
+                        
+                    
+                    
+                
+
+            return returndic
+        vars_and_pars = {}
+        vars_and_pars.update(process.variables)
+        vars_and_pars.update(process.parameters)
+        result = self.extract(vars_and_pars, arrays='each')
+        if process.pp is not None:
+            for p in process.pp:
+                d = convert(p)
+                result.update(d)
+        
+        return result
+        
 
 class Simdex:
     """
@@ -957,14 +1025,10 @@ class Simdex:
                 vardic = dict(zip(simulation.variables, simulation.variables))
                 update_h5(simulation, key, vardic=vardic)
             else:
-                for shortname, longname in vardic.iteritems():
+                extracted = simulation.extract(vardic, arrays='each')                
+                for shortname, arr in extracted.iteritems():
                     name = shortname.replace('.', '_dot_')
-                    try:
-                        self.h5.createArray(var_grp, name, simulation.get_value(longname))
-                    except(ValueError):
-                        # this variable dos not exist in the simulation.  That
-                        # is no problem, just pass
-                        pass
+                    self.h5.createArray(var_grp, name, arr)
                 
             self.h5.flush()
         
@@ -1562,6 +1626,7 @@ class Simdex:
         return filename + ' created'
         
     def postproc(self):
+        """Run the post-processing"""
         pass
         
 
@@ -1594,10 +1659,18 @@ class Process(object):
         if mothers is not None:
             self.mothers = mothers
             for m in self.mothers:
-                for shortname, longname in sub_vars.iteritems():
-                    self.variables['_'.join([m, shortname])] = '.'.join([m, longname])
-                for shortname, longname in sub_pars.iteritems():
-                    self.parameters['_'.join([m, shortname])] = '.'.join([m, longname])
+                if sub_vars is not None:
+                    self.sub_vars = sub_vars                    
+                    for shortname, longname in sub_vars.iteritems():
+                        self.variables['_'.join([m, shortname])] = '.'.join([m, longname])
+                else:
+                    self.sub_vars = {}
+                if sub_pars is not None:
+                    self.sub_pars = sub_pars                    
+                    for shortname, longname in sub_pars.iteritems():
+                        self.parameters['_'.join([m, shortname])] = '.'.join([m, longname])
+                else:
+                    self.sub_pars = {}
         else:
             self.mothers = []
         # paramaeters = contains short and long names of the parameters we need.

@@ -12,7 +12,7 @@ parameters={'cap1':'c1.C', 'res':'r.R'}
 sub_pars={'cap':'C'}
 variables={}
 sub_vars={'Qflow':'heatPort.Q_flow'}
-pp=['Qflow10 = 10 * Qflow']
+pp=['Qflow_kW = 0.001 * Qflow', 'timehours = Time / 3600']
 
 process = Process(mothers=mothers, parameters=parameters, 
                     sub_pars=sub_pars, variables=variables, 
@@ -42,3 +42,6 @@ c= myclass.my_method(3, 5.67)
 print c
 
 simdex=Simdex()
+
+sim=Simulation('LinkedCapacities.mat', verbose = True)
+processed = sim.postprocess(process)
