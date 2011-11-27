@@ -487,14 +487,28 @@ class Simulation:
                     newvar = '_'.join([m,splitted[0]]).replace('.','_')
                     for s in splitted[2:]:
                         fullname = '_'.join([m,s]).replace('.','_')
+                        print fullname
                         if result.has_key(fullname):
                             # a variable we need to get
                             composed.append(fullname)
                         else:
+                            """ 
+                            There are different possibilities. 
+                            - it is an operation (like +, -, /, ...) ==> append to composed
+                            - it is a command (like np.trapz(var) ==> not yet implmented
+                            - it is a variable that does not occur in this simulation:
+                                appending it to composed will lead to a name error
+                                because it is not present in the result dict.  
+                                For now, we just catch the error and print a warning
+                            """                            
                             composed.append(s)
-                    if self.verbose:
-                        print 'composed string: ', newvar, ' = ', ' '.join(composed)
-                    returndic[newvar] = eval(' '.join(composed), globals(), result)
+                    print 'composed string: ', newvar, ' = ', ' '.join(composed)
+                    try:
+                        returndic[newvar] = eval(' '.join(composed), globals(), result)
+                    except(NameError):
+                        print 'This pp string could not be evaluated:'
+                        print newvar, ' = ', ' '.join(composed)
+                        
 
             return returndic
             
@@ -602,8 +616,7 @@ class Simdex:
         # dictionary with SIDx:path pairs (path are full pathnames)        
         self.files = {}
         
-        if process is not None:
-            self.process = process
+        self.process = process
         
         # The pytables file to which this simdex is linked
         # Will be created in the current work directory, check first if it exists
@@ -692,6 +705,10 @@ class Simdex:
         If folder = '', the current work directory is indexed
         
         """
+        
+        if process is None:
+            process = self.process
+        
         if folder == '' :
             filenames = self.__get_files(os.getcwd(), '.mat')
         elif os.path.exists(folder):
@@ -1037,7 +1054,8 @@ class Simdex:
                 extracted = simulation.postprocess(process)
                 for shortname in process.variables:
                     name = shortname.replace('.', '_dot_')
-                    self.h5.createArray(var_grp, name, extracted[shortname])
+                    if extracted.has_key(shortname):
+                        self.h5.createArray(var_grp, name, extracted[shortname])
                 
             self.h5.flush()
         

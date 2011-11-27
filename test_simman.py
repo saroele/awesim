@@ -780,7 +780,7 @@ class ProcessTest(unittest.TestCase):
 suite1 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 suite3 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
-alltests = unittest.TestSuite([suite1])
+alltests = unittest.TestSuite([suite1, suite2, suite3])
 
 unittest.TextTestRunner(verbosity=1, failfast=True).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
