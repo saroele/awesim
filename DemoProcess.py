@@ -41,7 +41,8 @@ myclass=MyClass(dummyprocess)
 c= myclass.my_method(3, 5.67)
 print c
 
-simdex=Simdex()
-
 sim=Simulation('LinkedCapacities.mat', verbose = True)
 processed = sim.postprocess(process)
+
+simdex=Simdex(process=process)
+simdex.scan()

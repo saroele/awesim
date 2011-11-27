@@ -495,17 +495,14 @@ class Simulation:
                     if self.verbose:
                         print 'composed string: ', newvar, ' = ', ' '.join(composed)
                     returndic[newvar] = eval(' '.join(composed), globals(), result)
-                
-                        
-                    
-                    
-                
 
             return returndic
+            
         vars_and_pars = {}
         vars_and_pars.update(process.variables)
         vars_and_pars.update(process.parameters)
         result = self.extract(vars_and_pars, arrays='each')
+
         if process.pp is not None:
             for p in process.pp:
                 d = convert(p)
@@ -1011,7 +1008,7 @@ class Simdex:
             self.h5.flush()
         
         
-        def update_h5(simulation, key, vardic=None):
+        def update_h5(simulation, key):
             """
             Update the h5 file with the variables in the simulation object.
             Later I have to add post processing to this function and 
@@ -1020,15 +1017,27 @@ class Simdex:
                         
             var_grp = self.h5.getNode('/', key)
            
-            if vardic is None:
-                # add all variables, with full names
+            if process is None:
+                # add all variables to the h5, with full names
                 vardic = dict(zip(simulation.variables, simulation.variables))
-                update_h5(simulation, key, vardic=vardic)
-            else:
-                extracted = simulation.extract(vardic, arrays='each')                
+                extracted = simulation.extract(var=vardic, arrays = 'each')           
                 for shortname, arr in extracted.iteritems():
                     name = shortname.replace('.', '_dot_')
                     self.h5.createArray(var_grp, name, arr)
+                
+            elif process.variables is {}:
+                # add all variables to the h5, with full names
+                vardic = dict(zip(simulation.variables, simulation.variables))
+                extracted = simulation.extract(var=vardic, arrays = 'each')           
+                for shortname, arr in extracted.iteritems():
+                    name = shortname.replace('.', '_dot_')
+                    self.h5.createArray(var_grp, name, arr)
+
+            else:
+                extracted = simulation.postprocess(process)
+                for shortname in process.variables:
+                    name = shortname.replace('.', '_dot_')
+                    self.h5.createArray(var_grp, name, extracted[shortname])
                 
             self.h5.flush()
         
@@ -1041,10 +1050,7 @@ class Simdex:
            self.simulations.append(key)
            self.files[key] = simulation.filename
            add_meta(simulation, key)
-           if process is not None:
-               update_h5(simulation, key, vardic=self.process.variables)
-           else:
-               update_h5(simulation, key, vardic=None)
+           update_h5(simulation, key)
                
            if self.verbose:
                print "key = %s, filename = %s" % (key, self.files[key])
@@ -1065,10 +1071,8 @@ class Simdex:
             self.simulations.append(key)
             self.files[key] = simulation.filename
             add_meta(simulation, key)
-            if process is not None:
-               update_h5(simulation, key, vardic=self.process.variables)
-            else:
-               update_h5(simulation, key, vardic=None)
+            update_h5(simulation, key)
+                      
             if self.verbose:
                 print "self.simulations != []"
                 print "key = %s, filename = %s" % (key, self.files[key])
@@ -1649,8 +1653,7 @@ class Process(object):
             self.variables = {}
         else:
             self.variables = variables
-        self.variables['Time'] = 'Time' 
-        
+               
         if parameters is None:
             self.parameters = {} 
         else:
@@ -1676,6 +1679,8 @@ class Process(object):
         # paramaeters = contains short and long names of the parameters we need.
         # The data will be extracted from the .mat files and put in a dictionary
         # The short names will be the keys in that dictionary     
+        if variables is not {}:
+            self.variables['Time'] = 'Time'
         
         self.pp = pp
         
