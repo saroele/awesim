@@ -508,7 +508,9 @@ class Simulation:
                     except(NameError):
                         print 'This pp string could not be evaluated:'
                         print newvar, ' = ', ' '.join(composed)
-                        
+                 
+                # To ensure that the newly created var can be used later on:
+                process.sub_vars[splitted[0]] = splitted[0]
 
             return returndic
             
@@ -1122,15 +1124,15 @@ class Simdex:
             if process is not None:
                 if process.variables is not None:
                     try:
-                        self.vardic.update(self.process.variables)
+                        self.vardic.update(process.variables)
                     except(AttributeError):
-                        self.vardic=self.process.variables
+                        self.vardic=process.variables
                     
-                if process.variables is not None:
+                if process.parameters is not None:
                     try:
-                        self.pardic.update(self.process.parameters)
+                        self.pardic.update(process.parameters)
                     except(AttributeError):
-                        self.pardic=self.process.parameters
+                        self.pardic=process.parameters
                 
     def filter_similar(self, SID):
         '''
@@ -1697,8 +1699,9 @@ class Process(object):
         # paramaeters = contains short and long names of the parameters we need.
         # The data will be extracted from the .mat files and put in a dictionary
         # The short names will be the keys in that dictionary     
-        if variables is not {}:
-            self.variables['Time'] = 'Time'
+        if self.variables is not {}:
+            if not self.variables.has_key('Time'):
+                self.variables['Time'] = 'Time'
         
         self.pp = pp
         

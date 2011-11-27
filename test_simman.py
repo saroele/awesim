@@ -302,6 +302,44 @@ class SimulationTest(unittest.TestCase):
         result_pp = sim.postprocess(process)
         self.assertTrue(np.all(result_pp['timehours']==result_pp['Time']/3600))
 
+    def test_postprocess_recurring(self):
+        """Some advanced postprocessing using previous results with mothers"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 'T_degC2 =  T_degC '])
+        result_pp = sim.postprocess(process)
+        self.assertTrue(np.all(result_pp['c1_T_degC2']==result_pp['c1_T_degC']))
+
+    def test_postprocess_advanced(self):
+        """Some more advanced postprocessing with mothers"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                'Thigh = np.nonzero( T_degC > 640)[0]',
+                                'Qsel = Q [ Thigh ]'])
+        result_pp = sim.postprocess(process)
+        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
+        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
+
+    def test_postprocess_multilinestring(self):
+        """See if a multiline string also works"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                """if T_max > 640: """])
+        result_pp = sim.postprocess(process)
+        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
+        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
+        
+        
 class SimdexTest(unittest.TestCase):
     """
     Class for testing the class simman.Simdex
