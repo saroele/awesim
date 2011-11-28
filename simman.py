@@ -504,10 +504,15 @@ class Simulation:
                             composed.append(s)
                     #print 'composed string: ', newvar, ' = ', ' '.join(composed)
                     try:
+                        print newvar, ' = ', ' '.join(composed)
                         returndic[newvar] = eval(' '.join(composed), globals(), result)
                     except(NameError):
                         print 'This pp string could not be evaluated:'
                         print newvar, ' = ', ' '.join(composed)
+                    except:
+                        print 'Error during this evaluation:'
+                        print newvar, ' = ', ' '.join(composed)
+                        raise
                  
                 # To ensure that the newly created var can be used later on:
                 process.sub_vars[splitted[0]] = splitted[0]
@@ -521,6 +526,8 @@ class Simulation:
 
         if process.pp is not None:
             for p in process.pp:
+                if self.verbose:
+                    print p
                 d = convert(p)
                 result.update(d)
         
@@ -1706,8 +1713,7 @@ class Process(object):
         self.pp = pp
         
         if integrate is not None:
-            if self.pp is None:
-                self.pp = []
+            pp_int = []
             for name, conversion in integrate.iteritems():
                 # maka a pp string for this integration action
                 s = ' '.join([name+'_Int',
@@ -1718,7 +1724,13 @@ class Process(object):
                               'Time',
                               ',axis=0)*',
                               str(conversion)])
-                self.pp.append(s)
+                pp_int.append(s)
+            # now put the pp_int in front of the self.pp if any        
+            if self.pp is None:
+                self.pp = pp_int
+            else:
+                pp_int.extend(self.pp)
+                self.pp = pp_int
         
     def __str__(self):
         """Return a print string"""

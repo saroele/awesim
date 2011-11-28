@@ -71,8 +71,8 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(p.variables, {'Time':'Time', 
                                        'c1_Qflow':'c1.heatPort.Q_flow',
                                        'c2_Qflow':'c2.heatPort.Q_flow'}) 
-        self.assertEqual(p.pp, ['Qflow10 = 10 * Qflow', 
-                                'Qflow_Int = np.trapz( Qflow , Time ,axis=0)* '+str(J2kWh)])                                       
+        self.assertEqual(p.pp, ['Qflow_Int = np.trapz( Qflow , Time ,axis=0)* '+str(J2kWh),
+                                'Qflow10 = 10 * Qflow'])
                                        
         print p
 
@@ -835,7 +835,7 @@ suite1 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite3 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 
-alltests = unittest.TestSuite([suite1, suite2])
+alltests = unittest.TestSuite([suite1, suite2, suite3])
 
 unittest.TextTestRunner(verbosity=1, failfast=True).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)
