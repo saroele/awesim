@@ -71,7 +71,7 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(p.variables, {'Time':'Time', 
                                        'c1_Qflow':'c1.heatPort.Q_flow',
                                        'c2_Qflow':'c2.heatPort.Q_flow'}) 
-        self.assertEqual(p.pp, ['Qflow_Int = np.trapz( Qflow , Time ,axis=0)* '+str(J2kWh),
+        self.assertEqual(p.pp, ['Qflow_Int = np.trapz( Qflow , Time ,axis=0)*'+str(J2kWh)+' if Qflow .shape[0]== Time .shape[0] else np.array([0.0])',
                                 'Qflow10 = 10 * Qflow'])
                                        
         print p
@@ -468,7 +468,8 @@ class SimdexTest(unittest.TestCase):
         filenames = self.simdex.get_filenames('path')
         filenames.sort()
         self.assertEqual(self.sims, filenames)
-        self.assertEqual(self.simdex.vardic, {'Time':'Time','T2':'c2.T', 'dt2':'c[2].der(T)'})
+        self.assertEqual(self.simdex.vardic, 
+                         {'Time':'Time','T2':'c2.T', 'dt2':'c[2].der(T)'})
 
         self.simdex.h5.close()        
         

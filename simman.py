@@ -347,6 +347,8 @@ class Simulation:
         This method takes a dictionary as input with short_name/full_name pairs.
         It returns a dictionary with short_name/value pairs, value = numpy array.
         
+        Important: value is ALWAYS a np.array, even if is it a single value
+        
         Handling of arrays is implemented like this:
             - for the array variables you wish to get, replace the [i] (i=int)
               by [x].
@@ -363,6 +365,8 @@ class Simulation:
         First version 20110831, RDC
         
         20111123 - raise no exception if a variable is not found
+        20111128 - all values are numpy arrays. The reason for doing this is 
+                   to make postprocessing more straightforward and robust
         """
         
         
@@ -396,10 +400,15 @@ class Simulation:
             else: 
                 # the variable is NO array
                 try:
-                    r[short_name] = self.get_value(var[short_name])
+                    value = self.get_value(var[short_name])
                 except ValueError:
                     # the variable is not found.  No problem, pass to the next.                    
                     pass
+                else:
+                    if not isinstance(value, np.ndarray):
+                        r[short_name] = np.array(value, ndmin=1)
+                    else:
+                        r[short_name] = value
                         
         return r
         
@@ -457,7 +466,32 @@ class Simulation:
 
 
     def postprocess(self, process):
-        """Return a dictionary with results as defined in process"""
+        """
+        Return a dictionary with results as defined in process
+        
+        A difference is made between single line assignments (x = ...) 
+        and multiline statements (if ...).  
+        Therefore, the pp string can be multiline,
+        and multistatements.  The distinction is made based on the second item
+        after doing a pp.split(' '):
+            - if it is a '=', the pp-string is an assignement and is processed 
+              like that
+            - else, a different syntax is applied cause the spaces in the 
+              multiline expression can be of syntactic importance.  
+              I still have to develop this, and the point that I didn't solve 
+              yet is the attribution of the result.  If you have a string like
+              if a>0:
+                  b=1
+              else:
+                  b=2
+              you have to check each line, replace a and b with their full names
+              (in case of mothers) and recompose the multiline string with the 
+              same spaces. Surrounding each variable name with eg '$' could be
+              a good solution.  
+                
+        the multline thing is not implemented yet.
+        
+        """
         
         def convert(string):
             """
@@ -504,11 +538,11 @@ class Simulation:
                             composed.append(s)
                     #print 'composed string: ', newvar, ' = ', ' '.join(composed)
                     try:
-                        print newvar, ' = ', ' '.join(composed)
                         returndic[newvar] = eval(' '.join(composed), globals(), result)
-                    except(NameError):
+                    except(NameError) as e:
                         print 'This pp string could not be evaluated:'
                         print newvar, ' = ', ' '.join(composed)
+                        print 'Error message =  %s' % e
                     except:
                         print 'Error during this evaluation:'
                         print newvar, ' = ', ' '.join(composed)
@@ -1061,10 +1095,23 @@ class Simdex:
 
             else:
                 extracted = simulation.postprocess(process)
-                for shortname in process.variables:
+                for shortname, arr in extracted.iteritems():
                     name = shortname.replace('.', '_dot_')
-                    if extracted.has_key(shortname):
-                        self.h5.createArray(var_grp, name, extracted[shortname])
+                    ispar = process.parameters.has_key(shortname) or \
+                            process.parameters.has_key(name)
+#                    try:
+#                        ispar = self.pardic.has_key(shortname)
+#                    except(AttributeError):
+#                        # this simdex has no pardic
+#                        try:
+#                            ispar = self.parameters.index(shortname) > -1
+#                        except(ValueError):
+#                            ispar = False
+#                        except(AttributeError):
+#                            print 'aaaargh'
+                                
+                    if not ispar:
+                        self.h5.createArray(var_grp, name, arr)
                 
             self.h5.flush()
         
@@ -1671,7 +1718,8 @@ class Process(object):
                  sub_vars=None, pp=None, integrate=None):
         """Instantiate the Process object
         
-        Not all possible cases implemented yet
+        Note for pp: surround the names of variables by spaces so they can be
+        looked up in the parameters and variables dictionaries.
         
         """
         
@@ -1716,14 +1764,18 @@ class Process(object):
             pp_int = []
             for name, conversion in integrate.iteritems():
                 # maka a pp string for this integration action
-                s = ' '.join([name+'_Int',
-                              '=',
-                              'np.trapz(',
+                s = ''.join([name+'_Int',
+                              ' = ',
+                              'np.trapz( ',
                               name,
-                              ',',
+                              ' , ',
                               'Time',
-                              ',axis=0)*',
-                              str(conversion)])
+                              ' ,axis=0)*',
+                              str(conversion),
+                              ' if ',
+                              name,
+                              ' .shape[0]== Time .shape[0] else np.array([0.0])'
+                              ])
                 pp_int.append(s)
             # now put the pp_int in front of the self.pp if any        
             if self.pp is None:
@@ -1754,12 +1806,7 @@ class Process(object):
         
         return s
         
-    def postproclist(self):
-        """Return a list with all post-processing actions as strings"""
-        
-        for m in self.mothers:
-            for s in self.pp:
-                print m, s
+
                 
     
 
