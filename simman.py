@@ -108,6 +108,7 @@ import matplotlib.pyplot as plt
 import cPickle as pickle
 import bisect
 import tables as tbl
+
 #from enthought.traits.api import *
 #from enthought.traits.ui.api import *
 
@@ -1052,9 +1053,58 @@ class Simdex:
         def add_meta(simulation, key):
             """Create a node for the simulation and add data to /Metadata"""
             
+            def analyse_log(log_file):
+                """
+                analyse_log(log_file)
+                log_file = string with path to a dslog.txt file
+                
+                Check if the simulation ended successfully, which solver was used and
+                how much time it took.  Optionally, show the number of this and that
+                Returns a dictionary with the results
+                
+                """
+                
+                summary = {'successful':False}
+                lf = open(log_file, 'r')
+                lines = lf.readlines()    
+                for line_number, line in enumerate(lines):
+                    if line.find('Integration terminated successfully at T =') > -1:
+                        summary['successful'] = True
+                    elif line.find('CPU time for integration') > -1 or \
+                         line.find('CPU-time for integration') > -1:
+                        summary['CPU_time'] = line.split(' ')[-2]
+                    elif line.find('Number of (successful) steps') > -1:
+                        summary['steps_ok'] = line.split(' ')[-1]
+                    elif line.find('Number of rejected steps') > -1:
+                        summary['steps_nok'] = line.split(' ')[-1]
+                    elif line.find('Integration started at 0 using integration method:') > -1:
+                        summary['algorithm'] = lines[line_number + 1].strip('\n')
+                    elif line.find('Integration started at T = 0 using integration method') > -1:
+                        summary['algorithm'] = line.split(' ')[-1].strip('\n')
+                    elif line.find('This simulation timed out and was killed') > -1:
+                        summary['successful'] = False
+                        summary['timed_out'] = True
+                    elif line.find('Corresponding result file') > -1:
+                        summary['result file'] = line.split(' ')[-1].strip('\n')
+                lf.close()
+                if summary.has_key('steps_nok'):    
+                    summary['perc_wrong'] = 100. * float(summary['steps_nok']) / \
+                                            float(summary['steps_ok'])
+                else:
+                    summary['perc_wrong'] = 0
+                return summary            
+            
             class Meta(tbl.IsDescription):
                 SID = tbl.StringCol(itemsize=16)
                 path = tbl.StringCol(itemsize=160)
+                log_analysed = tbl.BoolCol()
+                successful = tbl.BoolCol()
+                algorithm = tbl.StringCol(itemsize=16)
+                CPU_time = tbl.Float32Col()
+                steps_ok = tbl.Int32Col()
+                steps_nok = tbl.Int32Col()
+                timed_out = tbl.BoolCol()
+                perc_wrong = tbl.Float32Col()
                 
             self.openh5()
             
@@ -1065,10 +1115,26 @@ class Simdex:
                 meta = self.h5.createTable('/', 'Metadata', Meta, 
                             title='All metadata for the simulations')
             
+            # check if there's a log file 
+            logfilename = simulation.filename.replace('result_','dslog_')\
+                                             .replace('.mat','.txt')
+            try:
+                log = analyse_log(logfilename)
+                loganalysis=True
+            except(IOError):
+                print 'No %s found, log-analysis not possible' % logfilename
+                loganalysis=False
+
+            # create all values for a new row            
             row = meta.row
-            
             row['SID'] = key
             row['path'] = simulation.filename
+            row['log_analysed'] = loganalysis
+               
+            if loganalysis:
+                for k in log:
+                    row[k] = log[k]
+                
             row.append()
             meta.flush
             

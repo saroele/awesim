@@ -5,6 +5,8 @@ Created on Wed Nov 23 11:06:19 2011
 @author: RDC
 """
 
+import simman
+reload(simman)
 from simman import Simulation, Simdex, Process
 
 mothers=['c1', 'c2']
