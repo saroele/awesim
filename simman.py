@@ -237,7 +237,7 @@ class Simulation:
         try:
             name_index = self.names.index(name)
         except (ValueError):
-            print '%s could not be found in %s' % (name, self.filename)
+            print '%s not found in %s' % (name, self.filename)
             raise
             
         possign = self.dataInfo[name_index, 1]
@@ -487,7 +487,7 @@ class Simulation:
                     newvar = '_'.join([m,splitted[0]]).replace('.','_')
                     for s in splitted[2:]:
                         fullname = '_'.join([m,s]).replace('.','_')
-                        print fullname
+                        #print fullname
                         if result.has_key(fullname):
                             # a variable we need to get
                             composed.append(fullname)
@@ -502,7 +502,7 @@ class Simulation:
                                 For now, we just catch the error and print a warning
                             """                            
                             composed.append(s)
-                    print 'composed string: ', newvar, ' = ', ' '.join(composed)
+                    #print 'composed string: ', newvar, ' = ', ' '.join(composed)
                     try:
                         returndic[newvar] = eval(' '.join(composed), globals(), result)
                     except(NameError):
@@ -1661,7 +1661,7 @@ class Process(object):
     """
     
     def __init__(self, mothers=None, parameters=None, sub_pars=None, variables=None,
-                 sub_vars=None, pp=None):
+                 sub_vars=None, pp=None, integrate=None):
         """Instantiate the Process object
         
         Not all possible cases implemented yet
@@ -1704,6 +1704,21 @@ class Process(object):
                 self.variables['Time'] = 'Time'
         
         self.pp = pp
+        
+        if integrate is not None:
+            if self.pp is None:
+                self.pp = []
+            for name, conversion in integrate.iteritems():
+                # maka a pp string for this integration action
+                s = ' '.join([name+'_Int',
+                              '=',
+                              'np.trapz(',
+                              name,
+                              ',',
+                              'Time',
+                              ',axis=0)*',
+                              str(conversion)])
+                self.pp.append(s)
         
     def __str__(self):
         """Return a print string"""

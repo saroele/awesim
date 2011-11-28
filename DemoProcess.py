@@ -44,5 +44,5 @@ print c
 sim=Simulation('LinkedCapacities.mat', verbose = True)
 processed = sim.postprocess(process)
 
-simdex=Simdex(process=process, verbose = True)
+simdex=Simdex(process=process, verbose = False)
 simdex.scan()
