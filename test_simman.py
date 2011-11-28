@@ -473,6 +473,32 @@ class SimdexTest(unittest.TestCase):
 
         self.simdex.h5.close()        
         
+    def test_init_with_process_pp(self):
+        """Tests if vardic is updated correctly after postprocessing"""
+        
+        J2kWh = 1e-6/3.6
+        vars_to_integrate = {'Q':J2kWh, 'Time':1}        
+        process = Process(mothers=['c1', 'c2'], 
+                          sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                'Thigh = np.nonzero( T_degC > 640)[0]',
+                                'Qsel = Q [ Thigh ]'],
+                          integrate = vars_to_integrate)
+        
+        self.simdex=Simdex(folder = getcwd(), process=process)        
+        
+        filenames = self.simdex.get_filenames('path')
+        filenames.sort()
+        self.assertEqual(self.sims, filenames)
+        for v in ['c1_Thigh', 'c2_Q', 'c2_Q_Int']:
+            self.assertTrue(self.simdex.vardic.has_key(v))
+        
+
+        self.simdex.h5.close()
+
+
     def test_init_subfolder_with_crappy_files(self):
        """ Test initiation from a folder including wrong .mat files"""
        

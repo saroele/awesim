@@ -570,23 +570,32 @@ class Simulation:
 
 class Simdex:
     """
-    A Simdex object is an index of all the parameters and variables in several 
-    .mat files.  It can be used to select a set of .mat files from a large set
-    in order to analyse the results of this set of simulations.
+    A Simdex object is an index of all the parameters, variables and 
+    post-processing results in several .mat files.  
+    It is used to treat different result files with a single or different 
+    Process objects and keep the full processed results.
+    Methods for easy filtering of the set of simulations are provided.
     
-    Most important attributes are:
-        - self.simulations (a list of filenames of the indexed simulations)        
-        - self.parameters (a list of all parameters in the set of simulations)
-        - self.parametermap (numpy array mapping which simulation has 
-          which parameters)        
-        - self.parametervalues (numpy array containing the values of the 
-          mapped parameters)
-        - self.variables (a list of all variables in the set of simulations)
-        - self.variablemap (numpy array mapping which simulation has 
-          which variables)
-        - self.filterset (dictionary tracking all executed filter options on 
-          the current set)
-        - self.vardic (optional) a mapping of shortname:longname pairs for 
+    The variables are stored in an h5 file.  Parameters are only stored locally
+    in the attributes of the simdex object. When a filter is applied to a
+    simdex, the resulting subset of simulations uses the same h5 file, so 
+    there is no unnecessary copying of big files on the hard drive.
+        
+    Overview of most important attributes :
+        - self.simulations: a list with unique ID's (SID) of the simulations
+        - self.parameters: a list of all parameters in the set of simulations.
+          The parameters are listed here with their FULL names
+        - self.parametermap: numpy array mapping which simulation has 
+          which parameters     
+        - self.parametervalues: numpy array containing the values of the 
+          mapped parameters
+        - self.variables: a list of all variables in the set of simulations. 
+          The variables are listed here with their FULL names.
+        - self.variablemap: numpy array mapping which simulation has 
+          which variables
+        - self.filterset: dictionary tracking all executed filter options on 
+          the current set
+        - self.vardic (optional): a mapping of shortname:longname pairs for 
           variables
         - self.pardic (optional) a mapping of shortname:longname pairs for 
           parameters
@@ -628,7 +637,7 @@ class Simdex:
     Important CONVENTIONS:
         - we make a distinction between parameters (one single value)
           and variables (a timeseries of values)
-        - simulation 'id' is integer starting from 0 (changed since 30/01/2011)
+        - simulation identity (SID) is a string with format SIDxxxx
             
     Possible IMPROVEMENTS:
     - multi folder file search
@@ -962,10 +971,11 @@ class Simdex:
         
         This method indexes a single simulation into the simdex.  All simdex
         attributes are updated, and the h5 file is completed with the variables
-        defined in vardic.  .  
+        defined in process.variables AND with the results of the postprocessing
+        as defined in process.pp
         
         simulation has to be a Simulation object
-        vardic is a dictionary with shortname:fullname pairs
+        process is a simman.Process object
         
         Convention: in the h5 file, the short names are used, but with any '.'
         replaced by '_dot_'.  The h5 file only contains variables, no parameters.
@@ -1070,9 +1080,12 @@ class Simdex:
         
         def update_h5(simulation, key):
             """
-            Update the h5 file with the variables in the simulation object.
-            Later I have to add post processing to this function and 
-            extraction of metadata from the log
+            Update the h5 file with the variables defined by the process.
+            Return a dictionary with shortname/longname pairs of everything
+            that has been added to the h5.
+            
+
+            Still to add: extraction of metadata from the log
             """
                         
             var_grp = self.h5.getNode('/', key)
@@ -1085,35 +1098,24 @@ class Simdex:
                     name = shortname.replace('.', '_dot_')
                     self.h5.createArray(var_grp, name, arr)
                 
-            elif process.variables is {}:
-                # add all variables to the h5, with full names
-                vardic = dict(zip(simulation.variables, simulation.variables))
-                extracted = simulation.extract(var=vardic, arrays = 'each')           
-                for shortname, arr in extracted.iteritems():
-                    name = shortname.replace('.', '_dot_')
-                    self.h5.createArray(var_grp, name, arr)
-
             else:
                 extracted = simulation.postprocess(process)
+                vardic = {}
                 for shortname, arr in extracted.iteritems():
                     name = shortname.replace('.', '_dot_')
                     ispar = process.parameters.has_key(shortname) or \
                             process.parameters.has_key(name)
-#                    try:
-#                        ispar = self.pardic.has_key(shortname)
-#                    except(AttributeError):
-#                        # this simdex has no pardic
-#                        try:
-#                            ispar = self.parameters.index(shortname) > -1
-#                        except(ValueError):
-#                            ispar = False
-#                        except(AttributeError):
-#                            print 'aaaargh'
                                 
                     if not ispar:
                         self.h5.createArray(var_grp, name, arr)
+                        try:
+                            longname = process.variables[shortname]
+                        except(KeyError):
+                            longname = shortname
+                        vardic[shortname] = longname
                 
             self.h5.flush()
+            return vardic
         
         # separate parameters from variables for simulation 
         simulation.separate()
@@ -1124,7 +1126,7 @@ class Simdex:
            self.simulations.append(key)
            self.files[key] = simulation.filename
            add_meta(simulation, key)
-           update_h5(simulation, key)
+           vardic = update_h5(simulation, key)
                
            if self.verbose:
                print "key = %s, filename = %s" % (key, self.files[key])
@@ -1136,7 +1138,9 @@ class Simdex:
            self.parametervalues[:, 0] = np.array(simulation.parametervalues)
            self.variablemap = np.ndarray((len(self.variables), 1))
            self.variablemap[:, 0] = 1
+           self.vardic = vardic
            
+           self.h5.close()
         
         else:
             # new simulation to be added to existing ones            
@@ -1145,10 +1149,10 @@ class Simdex:
             self.simulations.append(key)
             self.files[key] = simulation.filename
             add_meta(simulation, key)
-            update_h5(simulation, key)
+            vardic = update_h5(simulation, key)
                       
             if self.verbose:
-                print "self.simulations != []"
+                print "Added simulation to set with at least one other simulation"
                 print "key = %s, filename = %s" % (key, self.files[key])
             
             # Second, make new columns for parametermap, parametervalues and 
@@ -1171,23 +1175,25 @@ class Simdex:
             for par, parvalue in zip(simulation.parameters, simulation.parametervalues):
                 self.parameters, self.parametermap, self.parametervalues, position = index_one_par(self.parameters, self.parametermap, self.parametervalues, par, position, parvalue)
                 
-            # this method can be called on itself: close the h5 file afterwards
-            self.h5.close()
-            
+                  
             # finally, create or update self.vardic and self.pardic
             if process is not None:
-                if process.variables is not None:
-                    try:
-                        self.vardic.update(process.variables)
-                    except(AttributeError):
-                        self.vardic=process.variables
-                    
+                if not self.__dict__.has_key('vardic'):
+                    # it's the first time we do a postprocessing on this simdex,
+                    # probably because this was the first simulation to be indexed
+                    self.vardic = vardic
+                else:
+                    self.vardic.update(vardic)
+                               
                 if process.parameters is not None:
                     try:
                         self.pardic.update(process.parameters)
                     except(AttributeError):
                         self.pardic=process.parameters
-                
+
+            # this method can be called on itself: close the h5 file afterwards
+            self.h5.close()
+            
     def filter_similar(self, SID):
         '''
         Return a new simdex with similar simulations as SID (SIDxxxx)        
@@ -1469,7 +1475,9 @@ class Simdex:
                     pass
                 
         if not found_name:
-            raise NameError("%s was not found in this simdex" % name)
+            print "%s was not found in this simdex" % name
+            print 'maybe you want to use any of these parameters/variables?'
+            return self.exist(name)
         
         # I have problems with copy.copy(), don't know why. 
 #        selection=[]
