@@ -41,7 +41,7 @@ class ProcessTest(unittest.TestCase):
         process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'})
         self.assertEqual(process.variables, {'Time':'Time',
                                              'c1_T':'c1.T', 'c2_T':'c2.T'})
-
+                        
 
     def test_init3(self):
         """init process with variables and parameters"""
@@ -55,6 +55,21 @@ class ProcessTest(unittest.TestCase):
                                        'c1_Qflow':'c1.heatPort.Q_flow',
                                        'c2_Qflow':'c2.heatPort.Q_flow'}) 
         print p
+
+
+    def test_init_4(self):
+        """Process initialisation should not change original variables"""
+        
+        variables = {}  
+        parameters={'cap1':'c1.C', 'res':'r.R'}
+        sub_pars={'cap':'C'} 
+        process = Process(mothers=['c1', 'c2'], variables = variables,
+                          parameters=parameters, sub_pars=sub_pars,
+                          sub_vars={'T':'T'})
+        self.assertEqual(process.variables, {'Time':'Time',
+                                             'c1_T':'c1.T', 'c2_T':'c2.T'})
+        self.assertEqual(variables, {})
+        self.assertEqual(parameters, {'cap1':'c1.C', 'res':'r.R'})
 
 
     def test_init_integration(self):
@@ -509,6 +524,28 @@ class SimdexTest(unittest.TestCase):
        self.assertEqual(self.filenames, filenames)
        self.simdex.h5.close()
        
+    def test_scan_additional_folder(self):
+        """Test adding files from another folder to existing simdex"""
+        
+        J2kWh = 1e-6/3.6
+        vars_to_integrate = {'Q':J2kWh, 'Time':1}        
+        process = Process(mothers=['c1', 'c2'], 
+                          sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                'Thigh = np.nonzero( T_degC > 640)[0]',
+                                'Qsel = Q [ Thigh ]'],
+                          integrate = vars_to_integrate)
+        
+        self.simdex=Simdex(folder = getcwd(), process=process)
+        
+        # now add another folder (with exactly the same files)
+        folder = path.join(self.cwd, 'SubfolderWithCrappyFiles')
+        self.simdex.scan(folder = folder, process=process)
+        self.assertEqual(len(self.simdex.simulations), 16)
+
+
     def test_exist(self):
         """
         Test if :

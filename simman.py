@@ -863,11 +863,7 @@ class Simdex:
                         # index this new simulation 
                         self.index_one_sim(sim, process=process)
                         print '%s indexed' % (sim.filename)
-                    
-                        # and finally, add the filename of the nicely indexed 
-                        # simulation to the list of indexed simulations
-                        self.simulations.append(sim.filename)
-        
+                            
                     else:
                         print '%s, runs from %d s till %d s, therefore, it is NOT \
                              indexed' % (sim.filename, time[0],time[-1])
@@ -922,21 +918,34 @@ class Simdex:
         
         p = re.compile(regex, re.IGNORECASE)
         if tp == 'all' or tp == 'par':
-            # we search for parameters
+            # we search for parameters in the fullnames
             matchespar = []
-            for i in range(len(self.parameters)):
-                m = p.search(self.parameters[i])
+            for par in self.parameters:
+                m = p.search(par)
                 if m:
-                    matchespar.append(self.parameters[i])
+                    matchespar.append(par)
+            # we also search in the shortnames, if present
+            if self.__dict__.has_key('pardic'):            
+                for par in self.pardic:
+                    m = p.search(par)
+                    if m:
+                        matchespar.append(par)
             
             
         if tp == 'all' or tp == 'var':
-            # we search for variables
+            # we search for variables in the fullnames
             matchesvar = []
-            for i in range(len(self.variables)):
-                m = p.search(self.variables[i])
+            for var in self.variables:
+                m = p.search(var)
                 if m:
-                    matchesvar.append(self.variables[i])
+                    matchesvar.append(var)
+                    
+            # we also search in the shortnames
+            if self.__dict__.has_key('vardic'):
+                for var in self.vardic:
+                    m = p.search(var)
+                    if m:
+                        matchesvar.append(var)                    
           
         if tp == 'all':
             result = [matchespar, matchesvar]
@@ -1801,25 +1810,25 @@ class Process(object):
         if variables is None:
             self.variables = {}
         else:
-            self.variables = variables
+            self.variables = copy.copy(variables)
                
         if parameters is None:
             self.parameters = {} 
         else:
-            self.parameters = parameters
+            self.parameters = copy.copy(parameters)
                
         if mothers is not None:
-            self.mothers = mothers
+            self.mothers = copy.copy(mothers)
             for m in self.mothers:
                 if sub_vars is not None:
-                    self.sub_vars = sub_vars                    
-                    for shortname, longname in sub_vars.iteritems():
+                    self.sub_vars = copy.copy(sub_vars)                    
+                    for shortname, longname in self.sub_vars.iteritems():
                         self.variables['_'.join([m, shortname])] = '.'.join([m, longname])
                 else:
                     self.sub_vars = {}
                 if sub_pars is not None:
-                    self.sub_pars = sub_pars                    
-                    for shortname, longname in sub_pars.iteritems():
+                    self.sub_pars = copy.copy(sub_pars)
+                    for shortname, longname in self.sub_pars.iteritems():
                         self.parameters['_'.join([m, shortname])] = '.'.join([m, longname])
                 else:
                     self.sub_pars = {}
@@ -1832,7 +1841,7 @@ class Process(object):
             if not self.variables.has_key('Time'):
                 self.variables['Time'] = 'Time'
         
-        self.pp = pp
+        self.pp = copy.copy(pp)
         
         if integrate is not None:
             pp_int = []
