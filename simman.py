@@ -1516,7 +1516,8 @@ class Simdex:
         if not found_name:
             try:
                 if self.vardic.has_key(name):
-                    found_name = True        
+                    found_name = True
+                    return self._get_var_h5(name, selection=self.simulations)
             except(AttributeError):
                 pass
 
@@ -1545,26 +1546,26 @@ class Simdex:
                 try:
                     for shortname, longname in self.vardic.iteritems():
                         if name == longname:
-                            name = shortname
+                            print 'shortname found', shortname
+                            return self._get_var_h5(shortname, 
+                                                    selection=self.simulations)
                 except(AttributeError):
                     pass
+                else:
+                    # it is a long variable name that is not in the h5
+                    raise NotImplementedError('This variable name was not yet in the h5 file. \
+                    \nAdapt the process to get it in there')
+                    
                 
         if not found_name:
             print "%s was not found in this simdex" % name
             print 'maybe you want to use any of these parameters/variables?'
             return self.exist(name)
         
-        # I have problems with copy.copy(), don't know why. 
-#        selection=[]
-#        for sid in self.simulations:
-#            selection.append(sid)
-#        print selection
-        result = self._get_var(name, selection=self.simulations)        
+
         
-        return result
-        
-    def _get_var(self, var, selection=[]):
-        """Get values of variables"""
+    def _get_var_h5(self, var, selection=[]):
+        """Get values of variables that are stored in the h5 file"""
         
         self.openh5()
         
@@ -1578,6 +1579,7 @@ class Simdex:
                 # move on if this node is NOT in the selection
                 selection.index(node._v_name)
                 try:
+                    # look up the variable in this node
                     array = self.h5.getNode(node, name=var_replaced)
                     values[node._v_name] = array.read()
                 except(tbl.NoSuchNodeError):
@@ -1586,6 +1588,7 @@ class Simdex:
                     pass                    
                     #raise tbl.NoSuchNodeError(var + " not found in node " + node._v_pathname)
             except(ValueError):
+                # it's a node that was not in the selection
                 if self.verbose:
                     print " node not selected: ", node._v_name
                 pass
@@ -1632,106 +1635,78 @@ class Simdex:
 
     def plot(self, variable):
         '''
-        plot(variable) - variable = string with exact variable name
+        plot(variable) - variable = string with variable name (short or long)
         
         Creates a matplotlib figure with a simple plot of the timeseries for 
         each of the simulations in self
         '''
         
         # structure of this method:
-#            1. find variable name in self.variablemap
-#            2. select the simulations that HAVE this variable
-#            3. for each of those simulations, create a Simulation object sim
-#            4. use get_value on sim to get all the values
-#            5. create a plotstring to plot
+#            1. use get() to create dict with the SID/variable pairs
+#            2. loop over the dict and create a plotstring to plot
 
             
-        # 1. and 2.
-        varindex = self.variables.index(variable)
-        simulations = [x for (x, y) in \
-            zip(self.simulations, self.variablemap[varindex,:]) if y == 1]
-                
-        if len(simulations) < len(self.simulations):
-            raise ValueError('Some simulations did NOT have this variable')
+        # 1. 
+        toplot = self.get(variable)
+        if isinstance(toplot, list):
+            return toplot
+        times = self.get('Time')
         
-        # 3. and 4.
+        # 2.
         plotstring = ''
         plotlegend = ''
         
-        for s in range(len(simulations)):
-            sim = Simulation(self.files[simulations[s]])
-            if s == 0:
-                #only once: get time
-                time = sim.get_value('Time')
-            stringske = 'simID_' + str(s) + "=sim.get_value('" + variable + "')"
-            exec(stringske)
-            plotstring += 'time, simID_' + str(s) + ','
-            plotlegend += "'simID_" + str(s) + "',"
-        
+        for sid in toplot:
+            print 'sid = ', sid
+            plotstring += ''.join(['times["', sid, '"], toplot["', sid, '"],'])
+            plotlegend += ''.join(['"', sid + '", '])
+        # remove last semicolon
         plotstring = plotstring[:-1]
         plotlegend = plotlegend[:-1]
-        
+        print 'plotstring = ', plotstring
+        print 'plotlegend = ', plotlegend
+                
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        exec("lines = ax.plot(" + plotstring + ")")
-        exec("leg = ax.legend((" + plotlegend + "))")
+        lines = eval("ax.plot(" + plotstring + ")")
+        leg = eval("ax.legend((" + plotlegend + "))")
         ax.set_xlabel('time [s]')
         ax.set_ylabel(variable)
         
         return [fig, lines, leg]
 
-    def scatterplot(self, variable_X, variable_Y):
+    def scatterplot(self, X, Y):
         '''
-        scatterplot(variables) - variable = string with exact variable name
-        
-        Creates a matplotlib figure with a simple plot of the first timeseries for 
-        each of the simulations in self at the X-axis, and the second at the Y-axis
+        Creates a matplotlib figure with a simple plot of Y versus X for 
+        each of the simulations in self 
         '''
         
-        # structure of this method:
-#            1. find variable name in self.variablemap
-#            2. select the simulations that HAVE this variable
-#            3. for each of those simulations, create a Simulation object sim
-#            4. use get_value on sim to get all the values
-#            5. create a plotstring to plot
-
-            
+           
         # 1. and 2.
-        varindex_X = self.variables.index(variable_X)
-        varindex_Y = self.variables.index(variable_Y)
-        simulations = [x for (x, y, z) in \
-            zip(self.simulations, self.variablemap[varindex_X,:], 
-                self.variablemap[varindex_Y,:]) if y == 1 and z == 1]
-       
-        if len(simulations) < len(self.simulations):
-            raise ValueError('Some simulations did NOT have \
-                one of these variables')
+        toplot_X = self.get(X)
+        toplot_Y = self.get(Y)
+        
         
         # 3. and 4.
         plotstring = ''
         plotlegend = ''
         
-        for s in range(len(simulations)):
-            sim = Simulation(self.files[simulations[s]])
-            stringske_X = 'simIDX_' + str(s) + \
-                          "=sim.get_value('" + variable_X + "')"
-            exec(stringske_X)
-            stringske_Y = 'simIDY_' + str(s) + \
-                          "=sim.get_value('" + variable_Y + "')"            
-            exec(stringske_Y)
-            plotstring += 'simIDX_' + str(s) + ',' 'simIDY_' + str(s) + ','
-            plotlegend += "'simID_" + str(s) + "',"
+        for sid in toplot_X:
+            if toplot_Y.has_key(sid):
+                plotstring += ''.join(['toplot_X["', sid, '"], toplot_Y["', sid, '"],'])
+                plotlegend += ''.join(['"', sid + '", '])        
         
+        # remove last semicolon
         plotstring = plotstring[:-1]
         plotlegend = plotlegend[:-1]
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        exec("lines = ax.plot(" + plotstring + ")")
-        exec("leg = ax.legend((" + plotlegend + "))")
+        lines = eval("ax.plot(" + plotstring + ")")
+        leg = eval("ax.legend((" + plotlegend + "))")
         
-        ax.set_xlabel(variable_X)
-        ax.set_ylabel(variable_Y)
+        ax.set_xlabel(X)
+        ax.set_ylabel(Y)
         
         return [fig, lines, leg]
 
