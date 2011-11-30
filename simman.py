@@ -379,6 +379,7 @@ class Simulation:
             long_name = var[short_name]
             # check for array first            
             if long_name.find('[x]') > -1:
+                # treat the array                
                 var_name = long_name.replace('[x]', '\[[0-9]*\]')
                 var_name = var_name + '$'
                 # we make a list of all present array variables                    
@@ -386,7 +387,7 @@ class Simulation:
                 # we put all values in an array, as columns
                 try:
                     array = self.get_value(array_vars[0])
-                except(ValueError):
+                except(ValueError, IndexError):
                     # The array was not found: just pass to the next
                     pass
                 else:
@@ -1695,7 +1696,7 @@ class Simdex:
         
         for sid in toplot_X:
             if toplot_Y.has_key(sid):
-                plotstring += ''.join(['toplot_X["', sid, '"], toplot_Y["', sid, '"],'])
+                plotstring += ''.join(['toplot_X["', sid, '"], toplot_Y["', sid, '"], "D", '])
                 plotlegend += ''.join(['"', sid + '", '])        
         
         # remove last semicolon
