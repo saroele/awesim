@@ -571,15 +571,10 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual([[],[]], self.simdex.exist('this does not exist'))
         self.simdex.h5.close()
         
-    def test_cleanup(self):
-        """
-        Test cleanup for pars and vars separately
-        I had trouble with checking if the right par and right var is removed
-        therefore I only control the sizes of attributes and suppose the 
-        right one is gone
+    def test_cleanup_1(self):
+        """Check if parameters are removed if not present"""
                 
-        """
-
+        
         n = 1
         # set 1 value in the parametermap to 0
         par = self.simdex.parameters[n]
@@ -591,13 +586,14 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(npars-1, self.simdex.parametermap.shape[0])
         self.assertEqual(npars-1, self.simdex.parametervalues.shape[0])
         self.assertEqual(nvars, len(self.simdex.variables))
+        
         self.simdex.variablemap[44, 0] = 0
         self.simdex.cleanup()
         self.assertEqual(nvars-1, len(self.simdex.variables))
         self.assertEqual(nvars-1, self.simdex.variablemap.shape[0])
         self.assertEqual(npars-1, self.simdex.parametervalues.shape[0])
         self.simdex.h5.close()
-    
+
 
     def test_filter_selection(self):
         """Simdex.filter_selection() should return only selected SIDs"""
@@ -629,6 +625,24 @@ class SimdexTest(unittest.TestCase):
                          return the files mentioned in exp_results')
         
     
+    def test_filter_remove_2(self):
+        """Check if colums are removed from parametermap if needed"""
+                
+        # we test the shape and the values
+        shape = self.simdex.parametermap.shape
+        c1_C = self.simdex.get('c1.C')
+        filtered = self.simdex.filter_remove(['SID0002'])
+        shape_filtered = filtered.parametermap.shape
+#        self.assertEqual(shape[1]-1, shape_filtered[1])
+        c1_C_f = filtered.get('c1.C')
+        for sid in c1_C_f:
+            self.assertEqual(c1_C[sid], c1_C_f[sid])
+
+
+        self.simdex.h5.close()  
+        filtered.h5.close()
+
+
     def test_filter_similar_single_result(self):
         """ Simdex.get_identical() for Array.mat should return only Array.mat"""
         

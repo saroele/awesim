@@ -225,6 +225,9 @@ class Simulation:
         print self.filename
         
         return self.filename
+        
+    def __len__(self):
+        return len(self.simulations)
 
 
     def get_value(self, name):
@@ -1333,10 +1336,11 @@ class Simdex:
         
         newsimdex = copy.deepcopy(self)
         newsimulations = []
+        copyselection = copy.copy(selection)
 
         for sid in self.simulations:
             try:
-                selection.remove(sid)
+                copyselection.remove(sid)
                 newsimulations.append(sid)
             except(ValueError):
                 pass
@@ -1357,13 +1361,25 @@ class Simdex:
         self.h5.close()
         
         newsimdex = copy.deepcopy(self)
-
-        for sid in selection:
+        cols_to_remove = []
+        
+        for col, sid in enumerate(self.simulations):
             try:
-                newsimdex.simulations.remove(sid)
+                selection.index(sid)
             except(ValueError):
-                print "%s was not found in the simdex" % sid                
+                # this sim is to be kept           
                 pass
+            else:
+                # this simulation is found in selection ==> to be removed
+                cols_to_remove.append(col)
+                newsimdex.simulations.remove(sid)
+                
+            newsimdex.parametermap = np.delete(newsimdex.parametermap, 
+                                               cols_to_remove, 1)
+            newsimdex.parametervalues = np.delete(newsimdex.parametervalues, 
+                                                  cols_to_remove, 1)
+            newsimdex.variablemap = np.delete(newsimdex.variablemap, 
+                                              cols_to_remove, 1)
         
         newsimdex.cleanup()
         return newsimdex    
@@ -1482,12 +1498,18 @@ class Simdex:
         Removes unused parameters, variables and filenamesfrom a simdex
                
         '''
+        # First, remove all columns from parametermap, parametervalues and 
+        # variablemap that are not corresponding to self.simulations anymore
+        
+        
         
         new_files = {}
-        for sid in self.simulations:
+        for col, sid in enumerate(self.simulations):
             new_files[sid] = self.files[sid]
         self.files = new_files
         
+
+        # next, remove all parameters/variables that are not in the maps anymore
         pars_to_keep = np.any(self.parametermap, 1)
         self.parametermap = self.parametermap[pars_to_keep]
         self.parametervalues = self.parametervalues[pars_to_keep]
