@@ -1337,16 +1337,22 @@ class Simdex:
         self.h5.close()
         
         newsimdex = copy.deepcopy(self)
-        newsimulations = []
-        copyselection = copy.copy(selection)
-
-        for sid in self.simulations:
+        cols_to_remove = []
+        
+        for col, sid in enumerate(self.simulations):
             try:
-                copyselection.remove(sid)
-                newsimulations.append(sid)
+                selection.index(sid)
             except(ValueError):
-                pass
-        newsimdex.simulations = newsimulations
+                # sid not in selection: remove it
+                cols_to_remove.append(col)
+                newsimdex.simulations.remove(sid)
+                
+        newsimdex.parametermap = np.delete(newsimdex.parametermap, 
+                                           cols_to_remove, 1)
+        newsimdex.parametervalues = np.delete(newsimdex.parametervalues, 
+                                              cols_to_remove, 1)
+        newsimdex.variablemap = np.delete(newsimdex.variablemap, 
+                                          cols_to_remove, 1)
         
         newsimdex.cleanup()
         return newsimdex
@@ -1376,12 +1382,12 @@ class Simdex:
                 cols_to_remove.append(col)
                 newsimdex.simulations.remove(sid)
                 
-            newsimdex.parametermap = np.delete(newsimdex.parametermap, 
-                                               cols_to_remove, 1)
-            newsimdex.parametervalues = np.delete(newsimdex.parametervalues, 
-                                                  cols_to_remove, 1)
-            newsimdex.variablemap = np.delete(newsimdex.variablemap, 
+        newsimdex.parametermap = np.delete(newsimdex.parametermap, 
+                                           cols_to_remove, 1)
+        newsimdex.parametervalues = np.delete(newsimdex.parametervalues, 
                                               cols_to_remove, 1)
+        newsimdex.variablemap = np.delete(newsimdex.variablemap, 
+                                          cols_to_remove, 1)
         
         newsimdex.cleanup()
         return newsimdex    

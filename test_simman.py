@@ -599,6 +599,7 @@ class SimdexTest(unittest.TestCase):
         """Simdex.filter_selection() should return only selected SIDs"""
         
         selection = ['SID0001', 'SID0003', 'SID0004']
+        c1_C = self.simdex.get('c1.C')
         self.simdex_filtered = self.simdex.filter_selection(selection)
         exp_results = ['LinkedCapacities.mat', \
                    'LinkedCapacities_B.mat', 'LinkedCapacities_C.mat']
@@ -608,7 +609,10 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(exp_results, self.simdex_filtered_fn, 
                          'get_identical on LinkedCapacities_C.mat should \
                          return the files mentioned in exp_results')
-                         
+        c1_C_f = self.simdex_filtered.get('c1.C')                 
+        for sid in c1_C_f:
+            self.assertEqual(c1_C[sid], c1_C_f[sid])
+                 
     def test_filter_remove(self):
         """Simdex.filter_remove() should remove only selected SIDs"""
         
@@ -633,7 +637,7 @@ class SimdexTest(unittest.TestCase):
         c1_C = self.simdex.get('c1.C')
         filtered = self.simdex.filter_remove(['SID0002'])
         shape_filtered = filtered.parametermap.shape
-#        self.assertEqual(shape[1]-1, shape_filtered[1])
+        self.assertEqual(shape[1]-1, shape_filtered[1])
         c1_C_f = filtered.get('c1.C')
         for sid in c1_C_f:
             self.assertEqual(c1_C[sid], c1_C_f[sid])
@@ -903,7 +907,7 @@ class SimdexTest(unittest.TestCase):
         expectedsids = self.simdex.get_SID('linkedcapacities')
         self.assertEqual(sorted(result.keys()), sorted(expectedsids))
         sim = Simulation('LinkedCapacities_B.mat')
-        sid = self.simdex.get_SID('_B')[0]
+        sid = self.simdex.get_SID('LinkedCapacities_B')[0]
         self.assertTrue(np.all(result[sid]==sim.get_value('c2.T')))
         
         c1_C = self.simdex.get('parc').values()
