@@ -151,14 +151,16 @@ class Simulation:
         # turn filename in an absolute path
         # no .mat extension needed, it is added by the scipy.io.loadmat method
         filename = os.path.abspath(filename)
-        #try:
-        d = scipy.io.loadmat(filename, chars_as_strings = False)
+        try:
+            d = scipy.io.loadmat(filename, chars_as_strings = False)
             # if all goes well, d is a dictionary 
             
-        #except(UnicodeDecodeError):
-        #    print 'This error is caused by non-ascii characters in the .mat file\
-        #     like °C'
-            # raise
+        except(UnicodeDecodeError):
+            print 'This error is caused by non-ascii characters in the .mat file\
+             like °C'
+            print 'Modify the scipy.io.mio4.py file by adding ,"replace" in the\
+             line that causes the error'
+            raise
         
         # check the fields of d to make sure we're having a dymola file        
         try:
