@@ -244,6 +244,8 @@ class Simulation:
             name_index = self.names.index(name)
         except (ValueError):
             print '%s not found in %s' % (name, self.filename)
+            print 'Did you mean one of the following: '
+            print self.exist(name)
             raise
             
         possign = self.dataInfo[name_index, 1]
@@ -564,13 +566,31 @@ class Simulation:
         vars_and_pars.update(process.variables)
         vars_and_pars.update(process.parameters)
         result = self.extract(vars_and_pars, arrays='each')
-
+        result['mothers'] = process.mothers
+        
         if process.pp is not None:
             for p in process.pp:
                 if self.verbose:
                     print p
                 d = convert(p)
                 result.update(d)
+        
+        if process.aggregate is not None:
+            for name, action in process.aggregate.iteritems():
+                # maka a pp string for this aggregation action
+                if action == 'sum':
+                    extension='_Total'
+                elif action == 'mean':
+                    extension = '_Mean'
+                else:
+                    raise NotImplementedError('Unknown action for aggregation: %s' % (name))
+                expression = ''.join(['np.' + action + '(np.array( ',
+                              '[m + "',
+                              '_'+name,
+                              '" for m in mothers]), axis=0)'
+                              ])
+                returndic[name+extension] = eval(expression, globals(), result)
+                print s
         
         return result
         
@@ -1687,20 +1707,24 @@ class Simdex:
         plotstring = ''
         plotlegend = ''
         
-        for sid in toplot:
-            print 'sid = ', sid
-            plotstring += ''.join(['times["', sid, '"], toplot["', sid, '"],'])
-            plotlegend += ''.join(['"', sid + '", '])
-        # remove last semicolon
-        plotstring = plotstring[:-1]
-        plotlegend = plotlegend[:-1]
-        print 'plotstring = ', plotstring
-        print 'plotlegend = ', plotlegend
-                
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        lines = eval("ax.plot(" + plotstring + ")")
-        leg = eval("ax.legend((" + plotlegend + "))")
+        ax.hold = True        
+
+        for sid in toplot:
+            #print 'sid = ', sid
+            ax.plot(times[sid], toplot[sid], label=sid)            
+            #plotstring += ''.join(['times["', sid, '"], toplot["', sid, '"], label = ', sid, ','])
+            #plotlegend += ''.join(['"', sid + '", '])
+        # remove last semicolon
+        #plotstring = plotstring[:-1]
+        #plotlegend = plotlegend[:-1]
+        #print 'plotstring = ', plotstring
+        #print 'plotlegend = ', plotlegend
+                
+        #lines = eval("ax.plot(" + plotstring + ")")
+        leg = ax.legend()
+        lines = ax.get_lines()
         ax.set_xlabel('time [s]')
         ax.set_ylabel(variable)
         
@@ -1804,7 +1828,7 @@ class Process(object):
     """
     
     def __init__(self, mothers=None, parameters=None, sub_pars=None, variables=None,
-                 sub_vars=None, pp=None, integrate=None):
+                 sub_vars=None, pp=None, integrate=None, aggregate=None):
         """Instantiate the Process object
         
         Note for pp: surround the names of variables by spaces so they can be
@@ -1812,6 +1836,9 @@ class Process(object):
         
         """
         
+        pp_int = []
+        pp_agg = []
+               
         # make/complete the variables and parameter dicts, full paths
         if variables is None:
             self.variables = {}
@@ -1847,10 +1874,7 @@ class Process(object):
             if not self.variables.has_key('Time'):
                 self.variables['Time'] = 'Time'
         
-        self.pp = copy.copy(pp)
-        
         if integrate is not None:
-            pp_int = []
             for name, conversion in integrate.iteritems():
                 # maka a pp string for this integration action
                 s = ''.join([name+'_Int',
@@ -1866,12 +1890,36 @@ class Process(object):
                               ' .shape[0]== Time .shape[0] else np.array([0.0])'
                               ])
                 pp_int.append(s)
-            # now put the pp_int in front of the self.pp if any        
-            if self.pp is None:
-                self.pp = pp_int
-            else:
-                pp_int.extend(self.pp)
-                self.pp = pp_int
+
+#        if aggregate is not None:
+#            for name, action in aggregate.iteritems():
+#                # maka a pp string for this aggregation action
+#                if action == 'sum':
+#                    extension='_Total'
+#                elif action == 'mean':
+#                    extension = '_Mean'
+#                else:
+#                    raise NotImplementedError('Unknown action for aggregation: %s' % (name))
+#                s = ''.join([name+extension,
+#                              ' = ',
+#                              'np.' + action + '(np.array( ',
+#                              '[m + "',
+#                              '_'+name,
+#                              '" for m in mothers]), axis=0)'
+#                              ])
+#                pp_agg.append(s)
+#                print s
+
+
+        # now put the pp_int in front of the self.pp if any        
+        self.pp = []
+        self.pp.extend(pp_int)
+        self.pp.extend(pp_agg)
+        if pp is not None:
+            self.pp.extend(pp)
+            
+        self.aggregate = aggregate
+
         
     def __str__(self):
         """Return a print string"""
