@@ -566,7 +566,8 @@ class Simulation:
         vars_and_pars.update(process.variables)
         vars_and_pars.update(process.parameters)
         result = self.extract(vars_and_pars, arrays='each')
-        result['mothers'] = process.mothers
+        if process.mothers not in (None, []):
+            result['mothers'] = process.mothers
         
         if process.pp is not None:
             for p in process.pp:
@@ -584,13 +585,14 @@ class Simulation:
                     extension = '_Mean'
                 else:
                     raise NotImplementedError('Unknown action for aggregation: %s' % (name))
-                expression = ''.join(['np.' + action + '(np.array( ',
+                expression = ''.join(['np.array( ',
                               '[m + "',
                               '_'+name,
-                              '" for m in mothers]), axis=0)'
+                              '" for m in mothers])'
                               ])
-                returndic[name+extension] = eval(expression, globals(), result)
-                print s
+                print expression
+                result[name+extension] = eval(expression, globals(), result)
+                
         
         return result
         
