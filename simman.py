@@ -585,10 +585,10 @@ class Simulation:
                     extension = '_Mean'
                 else:
                     raise NotImplementedError('Unknown action for aggregation: %s' % (name))
-                expression = ''.join(['np.array( ',
+                expression = ''.join(['np.' + action + '(np.array( ',
                               '[m + "',
                               '_'+name,
-                              '" for m in mothers])'
+                              '" for m in mothers]), axis=0)'
                               ])
                 print expression
                 result[name+extension] = eval(expression, globals(), result)
