@@ -577,21 +577,29 @@ class Simulation:
                 result.update(d)
         
         if process.aggregate is not None:
-            for name, action in process.aggregate.iteritems():
-                # maka a pp string for this aggregation action
-                if action == 'sum':
-                    extension='_Total'
-                elif action == 'mean':
-                    extension = '_Mean'
+            for name, actions in process.aggregate.iteritems():
+                # there can be more than one action, check that first
+                if isinstance(actions, str):
+                    # actions is probably single string, or maybe string with spaces                    
+                    actionslist = actions.split()
                 else:
-                    raise NotImplementedError('Unknown action for aggregation: %s' % (name))
-                expression = ''.join(['np.' + action + '(np.array( ',
-                              '[m + "',
-                              '_'+name,
-                              '" for m in mothers]), axis=0)'
-                              ])
-                print expression
-                result[name+extension] = eval(expression, globals(), result)
+                    actionslist = actions
+                for action in actionslist:
+                    if action == 'sum':
+                        extension='_Total'
+                    elif action == 'mean':
+                        extension = '_Mean'
+                    elif action == 'each':
+                        extension = '_Each'
+                    else:
+                        raise NotImplementedError('Unknown action for aggregation: %s' % (action))
+                                    
+                    array = np.array([result[m + '_' + name] for m in process.mothers])
+                    if extension == '_Each':
+                        result[name+extension] = array
+                    else:
+                        expression = ''.join(['np.', action, '(array, axis=0)']) 
+                        result[name+extension] = eval(expression, globals(), {'array':array})
                 
         
         return result
@@ -1827,19 +1835,27 @@ class Process(object):
     """
     Class defining pre- and post processing of a simulation
     
+    This documentation needs completion, mainly the __init__() method
+    
+    
     """
     
     def __init__(self, mothers=None, parameters=None, sub_pars=None, variables=None,
                  sub_vars=None, pp=None, integrate=None, aggregate=None):
         """Instantiate the Process object
         
+        aggregate = dictionary, keys are variable names, values is a string 
+        or list of strings, containing 'sum', 'mean' or 'each'
+        ==> a corresponding variable with extension '_Total', '_Mean' or '_Each'
+            will be created.  Take care with 'each', it blows up the size of the
+            result object
+            
         Note for pp: surround the names of variables by spaces so they can be
         looked up in the parameters and variables dictionaries.
         
         """
         
         pp_int = []
-        pp_agg = []
                
         # make/complete the variables and parameter dicts, full paths
         if variables is None:
@@ -1893,30 +1909,9 @@ class Process(object):
                               ])
                 pp_int.append(s)
 
-#        if aggregate is not None:
-#            for name, action in aggregate.iteritems():
-#                # maka a pp string for this aggregation action
-#                if action == 'sum':
-#                    extension='_Total'
-#                elif action == 'mean':
-#                    extension = '_Mean'
-#                else:
-#                    raise NotImplementedError('Unknown action for aggregation: %s' % (name))
-#                s = ''.join([name+extension,
-#                              ' = ',
-#                              'np.' + action + '(np.array( ',
-#                              '[m + "',
-#                              '_'+name,
-#                              '" for m in mothers]), axis=0)'
-#                              ])
-#                pp_agg.append(s)
-#                print s
-
-
         # now put the pp_int in front of the self.pp if any        
         self.pp = []
         self.pp.extend(pp_int)
-        self.pp.extend(pp_agg)
         if pp is not None:
             self.pp.extend(pp)
             

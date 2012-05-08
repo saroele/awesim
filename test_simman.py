@@ -106,8 +106,7 @@ class ProcessTest(unittest.TestCase):
                                        'c2_Qflow':'c2.heatPort.Q_flow'}) 
         self.assertEqual(p.pp, ['Qflow10 = 10 * Qflow'])
                                        
-        print p
-
+        
 
 class SimulationTest(unittest.TestCase):
     """
@@ -416,8 +415,7 @@ class SimulationTest(unittest.TestCase):
     def test_postprocess_aggregation(self):
         """Postprocessing with aggregation"""
         
-        #vars_to_aggregate = {'Q': 'sum', 'Q': 'mean'}
-        vars_to_aggregate = {'Q': 'sum'}
+        vars_to_aggregate = {'Q': ['sum', 'mean', 'each'], 'T': 'mean'}
         J2kWh = 1e-6/3.6
         vars_to_integrate = {'Q':J2kWh, 'Time':1}
         
@@ -435,6 +433,14 @@ class SimulationTest(unittest.TestCase):
         self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
         self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
         self.assertIsNotNone(result_pp['Time_Int'])
+        self.assertAlmostEqual(result_pp['Q_Total'][3],
+                               result_pp['c1_Q'][3] + result_pp['c2_Q'][3])
+        self.assertAlmostEqual(result_pp['Q_Mean'][3],
+                               (result_pp['c1_Q'][3] + result_pp['c2_Q'][3])/2.)
+        self.assertEqual(np.sum(result_pp['Q_Each'], axis=0)[3], result_pp['Q_Total'][3])
+        self.assertAlmostEqual(result_pp['T_Mean'][16],
+                               (result_pp['c1_T'][16] + result_pp['c2_T'][16])/2.)
+                              
                       
 
 #    def test_postprocess_multilinestring(self):
