@@ -13,3 +13,4 @@ buildlog.txt
 /SpeedInvestigations.xlsx
 *.dat
 *.h5
+/outputfile.txt
