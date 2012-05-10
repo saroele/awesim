@@ -636,6 +636,11 @@ class Simdex:
           variables
         - self.pardic (optional) a mapping of shortname:longname pairs for 
           parameters
+        - self.simulations: list of the SID
+        - self.files: dictionary with SID:filename pairs
+        - self.identifiers: optional dictionary with short meaningful identifiers
+          for the simulations.  Is used as legend in plots by default (unless 
+          empty).
           
         
     Most important methods (* = implemented):
@@ -704,6 +709,7 @@ class Simdex:
         self.simulations = []
         # dictionary with SIDx:path pairs (path are full pathnames)        
         self.files = {}
+        self.identifiers = {}
         
         self.process = process
         
@@ -1723,7 +1729,12 @@ class Simdex:
 
         for sid in toplot:
             #print 'sid = ', sid
-            ax.plot(times[sid], toplot[sid], label=sid)            
+            
+            try:
+                label = self.identifiers[sid]
+            except KeyError:
+                label=sid
+            ax.plot(times[sid], toplot[sid], label=label)            
             #plotstring += ''.join(['times["', sid, '"], toplot["', sid, '"], label = ', sid, ','])
             #plotlegend += ''.join(['"', sid + '", '])
         # remove last semicolon
@@ -1759,7 +1770,11 @@ class Simdex:
         for sid in toplot_X:
             if toplot_Y.has_key(sid):
                 plotstring += ''.join(['toplot_X["', sid, '"], toplot_Y["', sid, '"], "D", '])
-                plotlegend += ''.join(['"', sid + '", '])        
+                try:
+                    label = self.identifiers[sid]
+                except KeyError:
+                    label=sid
+                plotlegend += ''.join(['"', label + '", '])        
         
         # remove last semicolon
         plotstring = plotstring[:-1]
@@ -1829,7 +1844,50 @@ class Simdex:
     def postproc(self):
         """Run the post-processing"""
         pass
+    
+    def apply(self, function_call):
+        """
+        Apply the function_call to each variable in each simulation.
+        E.g, if the simdex contains a variable called QHeat as a timeseries,
+        you can use this method like this to compute the total integrated QHeat
+        for each of the simulations:
+            
+            simdex.apply(np.trapz(QHeat, time))
+            
+        Returns a dictionary with SID/result pairs
         
+        """
+        result={}
+        for SID in self.simulations:
+            result[SID] = eval(function_call)
+                
+        return result
+        
+    def apply2(self, function, variable):
+        result={}
+        for k,v in self.get(variable).items():
+            result[k] = function(v)
+        return result
+        
+    def apply3(self, function, variable, *args, **kwargs):
+        result={}
+        for k,v in self.get(variable).items():
+            result[k] = function(v, *args, **kwargs)
+        return result
+        
+def apply(function, results):
+    """
+    Apply the function on each of the values in results.
+    Results is a dictionary with SID/value pairs, typically as a result 
+    from a simdex.get() call. 
+    
+    Returns a SID/function(value) dictionary    
+    """
+        
+    result = {}
+    for k,v in results.items():
+        result[k] = function(v)
+    return result
 
 class Process(object):
     """
