@@ -12,6 +12,7 @@ This module contains tools to:
 Two classes are defined:
     1) Simulation
     2) Simdex
+	3) Process
 
 The main properties of those classes are discussed below.
 One function is also defined: load_simdex(filename).  This function loads the
