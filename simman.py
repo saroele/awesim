@@ -105,9 +105,12 @@ import scipy.io
 import re
 import copy
 import matplotlib.pyplot as plt
+from matplotlib.dates import date2num
 import cPickle as pickle
 import bisect
 import tables as tbl
+from datetime import datetime, timedelta
+
 
 #from enthought.traits.api import *
 #from enthought.traits.ui.api import *
@@ -562,10 +565,32 @@ class Simulation:
 
             return returndic
             
+        def aggregate_by_hour(var, time, interval=900):
+            """
+            Function to calculate the aggregated average of a timeseries by 
+            time of the day in bins of interval seconds (default = 900s)
+            
+            Returns an array with 86400/interval values, one for each interval
+            of the day. 
+            
+            This function can be used in the post-processing
+            """
+            
+            hourday=np.mod(time/3600., 24.0)
+                
+            result = np.zeros(86400/interval)
+            for i in np.arange(0, 24, interval/3600.):
+                ind = np.nonzero(hourday == i)
+                result[i*3600/interval] = var[ind].sum()/ind[0].shape[0]
+                      
+            return result        
+        
         vars_and_pars = {}
         vars_and_pars.update(process.variables)
         vars_and_pars.update(process.parameters)
         result = self.extract(vars_and_pars, arrays='each')
+        # pass the function to the dictionary in order to get it in the namespace
+        result['aggregate_by_hour'] = aggregate_by_hour
         if process.mothers not in (None, []):
             result['mothers'] = process.mothers
         
@@ -602,6 +627,7 @@ class Simulation:
                         result[name+extension] = eval(expression, globals(), {'array':array})
                 
         
+        result.pop('aggregate_by_hour')        
         return result
         
 
@@ -710,6 +736,9 @@ class Simdex:
         # dictionary with SIDx:path pairs (path are full pathnames)        
         self.files = {}
         self.identifiers = {}
+        # used for plotting
+        self.year = 2010
+        self.time4plots = {}
         
         self.process = process
         
@@ -1708,6 +1737,14 @@ class Simdex:
         each of the simulations in self
         '''
         
+        # In order to plot the timeseries nicely with dates, we use plot_date()
+        def create_time4plot(sid):
+            """Convert time into matplotlib format"""
+            start = datetime(self.year, 1, 1)
+            datetimes = [start + timedelta(t/86400) for t in times[sid]]
+            self.time4plots[sid] = date2num(datetimes)
+            
+        
         # structure of this method:
 #            1. use get() to create dict with the SID/variable pairs
 #            2. loop over the dict and create a plotstring to plot
@@ -1734,7 +1771,12 @@ class Simdex:
                 label = self.identifiers[sid]
             except KeyError:
                 label=sid
-            ax.plot(times[sid], toplot[sid], label=label)            
+            
+            if not self.time4plots.has_key(sid):
+                create_time4plot(sid)
+                
+            ax.plot_date(self.time4plots[sid], toplot[sid], fmt='', ls = '-', 
+                         label=label)            
             #plotstring += ''.join(['times["', sid, '"], toplot["', sid, '"], label = ', sid, ','])
             #plotlegend += ''.join(['"', sid + '", '])
         # remove last semicolon
@@ -1746,8 +1788,9 @@ class Simdex:
         #lines = eval("ax.plot(" + plotstring + ")")
         leg = ax.legend()
         lines = ax.get_lines()
-        ax.set_xlabel('time [s]')
+        ax.set_xlabel('time')
         ax.set_ylabel(variable)
+        plt.grid()
         
         return [fig, lines, leg]
 
@@ -1875,6 +1918,17 @@ class Simdex:
             result[k] = function(v, *args, **kwargs)
         return result
         
+    def apply4(self, function, **kwargs):
+        
+        arg_dict = {fun_arg: self.get(sim_args) for fun_arg, sim_args in kwargs.items()}
+        result = {}
+        for SID in arg_dict[kwargs.keys()[0]]:
+            fun_kwargs = {fun_arg: sim_dict[SID] for fun_arg, sim_dict in arg_dict.items()} 
+            result[SID] = function(**fun_kwargs)
+        return result
+ 
+
+        
 def apply(function, results):
     """
     Apply the function on each of the values in results.
@@ -1892,6 +1946,8 @@ def apply(function, results):
 class Process(object):
     """
     Class defining pre- and post processing of a simulation
+    
+    The variable 'Time' is automatically created
     
     This documentation needs completion, mainly the __init__() method
     
