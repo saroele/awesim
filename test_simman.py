@@ -13,7 +13,7 @@ from os import getcwd, path, remove
 from cStringIO import StringIO
 import sys
 import matplotlib
-from simman import Simulation, Simdex, Process, load_simdex
+from simman import Simulation, Simdex, Result, Process, load_simdex
 
 
 class ProcessTest(unittest.TestCase):
@@ -107,6 +107,44 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(p.pp, ['Qflow10 = 10 * Qflow'])
                                        
         
+
+class ResultTest(unittest.TestCase):
+    """Class for testing Result"""
+    
+    def setUp(self):
+        self.values = {'c':np.arange(4), 
+                       'a':np.array([1,3,5,7]), 
+                       'b':np.array([2,8])}
+        self.time = {'c':np.arange(4), 
+                       'a':np.arange(4), 
+                       'b':np.array([0,1])}
+        self.identifiers = {'c':'sim C', 
+                       'a':'sim A', 
+                       'b':'sim B'}
+    
+    
+    def test___init__(self):
+        """Initiation of a Result with only values"""
+        res = Result(self.values)
+        
+        self.assertEqual(res.val, self.values)
+        self.assertFalse(hasattr(res, 'time'))
+        self.assertFalse(hasattr(res, 'identifiers'))
+        
+    def test___init__2(self):
+        """Initiation of a Result with time and identifiers"""
+        res = Result(self.values, self.time, self.identifiers)
+        
+        self.assertEqual(res.val, self.values)
+        self.assertTrue(hasattr(res, 'time'))
+        self.assertTrue(hasattr(res, 'identifiers'))
+
+    def test_values(self):
+        """Get values correctly sorted"""
+        res = Result(self.values, self.time, self.identifiers)
+        v=res.values()
+        
+        self.assertEqual(np.column_stack(
 
 class SimulationTest(unittest.TestCase):
     """
@@ -968,11 +1006,13 @@ class SimdexTest(unittest.TestCase):
 
 
 suite1 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
-suite2 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
-suite3 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
+suite2 = unittest.TestLoader().loadTestsFromTestCase(ResultTest)
+suite3 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
+suite4 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 
-alltests = unittest.TestSuite([suite1, suite2, suite3])
 
-unittest.TextTestRunner(verbosity=0, failfast=True).run(alltests)
-#unittest.TextTestRunner(verbosity=1).run(suite2)
+alltests = unittest.TestSuite([suite1, suite2, suite3, suite4])
+
+#unittest.TextTestRunner(verbosity=0, failfast=True).run(alltests)
+unittest.TextTestRunner(verbosity=1).run(suite2)
 

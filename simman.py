@@ -1943,6 +1943,45 @@ def apply(function, results):
         result[k] = function(v)
     return result
 
+
+class Result(object):
+    """
+    Class containing the result for one single variable but for different 
+    simualations.  An instance from this class is returned from Simdex.get()
+    
+    This class also contains the plot functionality and methods to apply 
+    basic operations and functions to it. 
+    """
+    
+    def __init__(self, values, time=None, identifiers=None):
+        """
+        Instantiate a Result object. 
+        
+        Variables
+        ---------
+        
+        values = dictionary {sid:values}
+        time (optional) = dictionary {sid:time}
+        identifiers (optional) = dictionary {sid:identifier}.
+        
+        """
+        
+        self.val = values
+        if time is not None:
+            self.time = time
+        if identifiers is not None:
+            self.identifiers = identifiers
+            
+    def values(self):
+        """
+        Return an array with as columns, the values of the variable in the order 
+        of the sid's
+        """
+        
+        return np.column_stack((self.val[sid] for sid in sorted(self.val.keys())))
+
+
+
 class Process(object):
     """
     Class defining pre- and post processing of a simulation
