@@ -1595,7 +1595,10 @@ class Simdex:
         
 
     def get(self, name):
-        """Return a dictionary with SID:value pairs for par or var name"""
+        """
+        Return a Result instance with SID:value pairs for par or var name
+        
+        """
         
         # There are many different options for name
         found_name = False        
@@ -1603,7 +1606,9 @@ class Simdex:
         # ==> attribute the longname to name
         try:
             if self.pardic.has_key(name):
-                return self._get_par(self.pardic[name])
+                resdic = self._get_par(self.pardic[name])
+                time = None
+                found_name = True
         except(AttributeError):
             pass
         
@@ -1612,8 +1617,9 @@ class Simdex:
         if not found_name:
             try:
                 if self.vardic.has_key(name):
+                    resdic = self._get_var_h5(name, selection=self.simulations)
+                    time = self._get_var_h5('Time', selection=self.simulations)
                     found_name = True
-                    return self._get_var_h5(name, selection=self.simulations)
             except(AttributeError):
                 pass
 
@@ -1622,9 +1628,9 @@ class Simdex:
         if not found_name:
             try:
                 parindex = self.parameters.index(name)
+                resdic = self._get_par(name)
+                time = None
                 found_name = True
-                return self._get_par(name)
-                
             except:
                 pass
             
@@ -1643,7 +1649,9 @@ class Simdex:
                     for shortname, longname in self.vardic.iteritems():
                         if name == longname:
                             print 'shortname found', shortname
-                            return self._get_var_h5(shortname, 
+                            resdic = self._get_var_h5(shortname, 
+                                                    selection=self.simulations)
+                            time = self._get_var_h5('Time', 
                                                     selection=self.simulations)
                 except(AttributeError):
                     pass
@@ -1657,6 +1665,9 @@ class Simdex:
             print "%s was not found in this simdex" % name
             print 'maybe you want to use any of these parameters/variables?'
             return self.exist(name)
+        else:
+            return Result(resdic, time=time, 
+                          identifiers = self.identifiers, year=self.year)
         
 
         

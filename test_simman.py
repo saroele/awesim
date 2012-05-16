@@ -716,8 +716,8 @@ class SimdexTest(unittest.TestCase):
                          'get_identical on LinkedCapacities_C.mat should \
                          return the files mentioned in exp_results')
         c1_C_f = self.simdex_filtered.get('c1.C')                 
-        for sid in c1_C_f:
-            self.assertEqual(c1_C[sid], c1_C_f[sid])
+        for sid in c1_C_f.val:
+            self.assertEqual(c1_C.val[sid], c1_C_f.val[sid])
                  
     def test_filter_remove(self):
         """Simdex.filter_remove() should remove only selected SIDs"""
@@ -745,8 +745,8 @@ class SimdexTest(unittest.TestCase):
         shape_filtered = filtered.parametermap.shape
         self.assertEqual(shape[1]-1, shape_filtered[1])
         c1_C_f = filtered.get('c1.C')
-        for sid in c1_C_f:
-            self.assertEqual(c1_C[sid], c1_C_f[sid])
+        for sid in c1_C_f.val:
+            self.assertEqual(c1_C.val[sid], c1_C_f.val[sid])
 
 
         self.simdex.h5.close()  
@@ -1011,10 +1011,10 @@ class SimdexTest(unittest.TestCase):
         self.simdex = Simdex(folder=getcwd(), process=process)        
         result = self.simdex.get('T2')
         expectedsids = self.simdex.get_SID('linkedcapacities')
-        self.assertEqual(sorted(result.keys()), sorted(expectedsids))
+        self.assertEqual(sorted(result.val.keys()), sorted(expectedsids))
         sim = Simulation('LinkedCapacities_B.mat')
         sid = self.simdex.get_SID('LinkedCapacities_B')[0]
-        self.assertTrue(np.all(result[sid]==sim.get_value('c2.T')))
+        self.assertTrue(np.all(result.val[sid]==sim.get_value('c2.T')))
         
         c1_C = self.simdex.get('parc').values()
         c1_C.sort()
@@ -1034,6 +1034,6 @@ suite4 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 
 alltests = unittest.TestSuite([suite1, suite2, suite3, suite4])
 
-#unittest.TextTestRunner(verbosity=0, failfast=True).run(alltests)
-unittest.TextTestRunner(verbosity=1).run(suite2)
+unittest.TextTestRunner(verbosity=0, failfast=True).run(alltests)
+#unittest.TextTestRunner(verbosity=1).run(suite2)
 
