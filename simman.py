@@ -1594,9 +1594,17 @@ class Simdex:
         self.variablemap = self.variablemap[vars_to_keep]
         
 
-    def get(self, name):
+    def get(self, name, aggregate=None):
         """
         Return a Result instance with SID:value pairs for par or var name
+        
+        If the name is a sub-variable, the corresponding variable for all
+        mothers will be extracted and put in a single array.  
+        
+        aggregate = None, 'sum' or 'mean' : if None, the values in the Result
+        object will contain the trajectories for all variables.  
+        If aggregate is 'sum', all trajectories are summed, if it is 'mean', 
+        the mean value of all trajectories is computed.
         
         """
         
@@ -1634,7 +1642,7 @@ class Simdex:
             except:
                 pass
             
-        # 4. Last option, it is a long variable name
+        # 4. Last regular option, it is a long variable name
         # ==> two options: if it is in a vardic, use the short name, 
         # else use it as it comes
         if not found_name:
@@ -1661,6 +1669,27 @@ class Simdex:
                     \nAdapt the process to get it in there')
                     
                 
+        # 5. aggregation option: the name is a sub_var
+        if not found_name and self.process.sub_vars.has_key(name):
+            # we loop over the mothers and put all the arrays together
+            for m in self.process.mothers:
+                single_array = self._get_var_h5(var=m+'_'+name, 
+                                                selection=self.simulations)
+                if m == self.process.mothers[0]:
+                    #initiate the resulting dictionary
+                    resdic = copy.deepcopy(single_array)
+                else:
+                    for k in resdic.keys():
+                        resdic[k] = np.column_stack((resdic[k], single_array[k]))
+            
+            if aggregate == 'sum':
+                resdic = {k:np.sum(v, axis=1) for k,v in resdic.items()}
+            elif aggregate == 'mean':
+                resdic = {k:np.mean(v, axis=1) for k,v in resdic.items()}
+            
+            time = self._get_var_h5('Time', selection=self.simulations)
+            found_name = True
+  
         if not found_name:
             print "%s was not found in this simdex" % name
             print 'maybe you want to use any of these parameters/variables?'

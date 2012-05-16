@@ -1022,6 +1022,53 @@ class SimdexTest(unittest.TestCase):
                                       800.,   800.,   800., 1000.]
         self.assertTrue(exp_result_sorted == c1_C)
         self.simdex.h5.close()        
+        
+    def test_get_sub_var(self):
+        """Simdex.get() should return correctly for aggregated subvariables"""
+        
+        self.simdex.h5.close()
+        
+        mothers=['c1', 'c2']
+        parameters={'cap1':'c1.C', 'res':'r.R'}
+        sub_pars={'cap':'C'}
+        sub_vars={'Qflow':'heatPort.Q_flow'}        
+        process=Process(parameters=parameters, sub_vars = sub_vars, 
+                        mothers=mothers, sub_pars=sub_pars)
+
+        self.simdex = Simdex(folder=getcwd(), process=process)        
+
+        Q1 = self.simdex.get('c1_Qflow').val
+        Q2 = self.simdex.get('c2_Qflow').val
+        Q = self.simdex.get('Qflow').val
+        
+        for sid in Q1.keys():        
+            self.assertTrue(np.all(Q1[sid] == Q[sid][:,0]))
+            self.assertTrue(np.all(Q2[sid] == Q[sid][:,1]))
+
+    def test_get_sub_var(self):
+        """Simdex.get() should return correctly for sum and mean-aggregated subvariables"""
+        
+        self.simdex.h5.close()
+        
+        mothers=['c1', 'c2']
+        parameters={'cap1':'c1.C', 'res':'r.R'}
+        sub_pars={'cap':'C'}
+        sub_vars={'Qflow':'heatPort.Q_flow'}        
+        process=Process(parameters=parameters, sub_vars = sub_vars, 
+                        mothers=mothers, sub_pars=sub_pars)
+
+        self.simdex = Simdex(folder=getcwd(), process=process)        
+
+        Q1 = self.simdex.get('c1_Qflow').val
+        Q2 = self.simdex.get('c2_Qflow').val
+        QSum = self.simdex.get('Qflow', aggregate='sum').val
+        QMean = self.simdex.get('Qflow', aggregate='mean').val
+        
+        for sid in Q1.keys():        
+            self.assertTrue(np.all((Q1[sid]+Q2[sid])/2 == QMean[sid]))
+            self.assertTrue(np.all((Q1[sid]+Q2[sid]) == QSum[sid]))
+
+        self.simdex.h5.close()                
 #if __name__ == '__main__':
 #    unittest.main()
 
