@@ -1661,6 +1661,15 @@ class Simdex:
             elif aggregate == 'mean':
                 resdic = {k:np.mean(v, axis=1) for k,v in resdic.items()}
             
+            # reshape the array if the second dimension is larger than the first
+            shape = resdic.values()[0].shape      
+            try:
+                if shape[0]==1 and shape[1] > 1:
+                    resdic = {k:v.reshape((shape[1])) for k,v in resdic.items()}
+            except:
+                # the shape probably is of length 1 or even 0
+                pass
+            
             time = self._get_var_h5('Time', selection=self.simulations)
             found_name = True
   
@@ -1989,21 +1998,61 @@ class Result(object):
         ax = fig.add_subplot(111)
         ax.hold = True        
 
-        for sid in self.simulations:
+        # we have to make a distinction between plotting timeseries and other results
+        try:
+            if len(self.time[self.simulations[0]])==len(self.val[self.simulations[0]]): 
+                plot_type='plot_date'
+            elif len(self.val[self.simulations[0]]) <> 1:
+                # most probably an aggregated array. So plot the x values for 
+                # each SID as a series 
+                plot_type='aggregated'
+            else:
+                # length == 1, so single_value
+                plot_type = 'single_value'
+        except:
             try:
-                label = self.identifiers[sid]
-            except KeyError:
-                label=sid
-            
-            if not self.time4plots.has_key(sid):
-                create_time4plot(sid)
+                if len(self.val[self.simulations[0]]) <> 1:          
+                    # most probably an aggregated array. So plot the x values for 
+                    # each SID as a series 
+                    plot_type='aggregated'
+                else:
+                    # length == 1, so single_value
+                    plot_type = 'single_value'
+            except:
+                # I get an exception when trying to get the length of a single
+                # intgegrated value
+                plot_type = 'single_value'
                 
-            ax.plot_date(self.time4plots[sid], self.val[sid], fmt='', ls = '-', 
-                         label=label)            
+        if plot_type=='plot_date':
+            for sid in self.simulations:
+                try:
+                    label = self.identifiers[sid]
+                except KeyError:
+                    label=sid
+                if not self.time4plots.has_key(sid):
+                    create_time4plot(sid)
+                    
+                ax.plot_date(self.time4plots[sid], self.val[sid], fmt='', ls = '-', 
+                             label=label)            
+        elif plot_type == 'single_value':
+            ax.plot(range(len(self.simulations)), self.values(), 'D')
+            ax.set_xticks(range(len(self.simulations)))
+            ticklabels = [self.identifiers[sid] for sid in self.simulations]
+            ax.set_xticklabels(ticklabels)
+        else:
+            # aggregated, plot lines with markers            
+            for sid in self.simulations:
+                try:
+                    label = self.identifiers[sid]
+                except KeyError:
+                    label=sid
                 
+                ax.plot(self.val[sid], 'o-', label=label)            
+                             
         leg = ax.legend()
         lines = ax.get_lines()
-        ax.set_xlabel('time')
+        if plot_type == 'plot_date':
+            ax.set_xlabel('time')
         ax.set_ylabel(ylabel)
         plt.grid()
         
