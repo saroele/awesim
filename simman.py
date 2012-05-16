@@ -1748,62 +1748,11 @@ class Simdex:
         each of the simulations in self
         '''
         
-        # In order to plot the timeseries nicely with dates, we use plot_date()
-        def create_time4plot(sid):
-            """Convert time into matplotlib format"""
-            start = datetime(self.year, 1, 1)
-            datetimes = [start + timedelta(t/86400) for t in times[sid]]
-            self.time4plots[sid] = date2num(datetimes)
-            
-        
-        # structure of this method:
-#            1. use get() to create dict with the SID/variable pairs
-#            2. loop over the dict and create a plotstring to plot
+        result = self.get(variable)
+        [fig, lines, leg] = result.plot(variable)
 
-            
-        # 1. 
-        toplot = self.get(variable)
-        if isinstance(toplot, list):
-            return toplot
-        times = self.get('Time')
-        
-        # 2.
-        plotstring = ''
-        plotlegend = ''
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.hold = True        
-
-        for sid in toplot:
-            #print 'sid = ', sid
-            
-            try:
-                label = self.identifiers[sid]
-            except KeyError:
-                label=sid
-            
-            if not self.time4plots.has_key(sid):
-                create_time4plot(sid)
-                
-            ax.plot_date(self.time4plots[sid], toplot[sid], fmt='', ls = '-', 
-                         label=label)            
-            #plotstring += ''.join(['times["', sid, '"], toplot["', sid, '"], label = ', sid, ','])
-            #plotlegend += ''.join(['"', sid + '", '])
-        # remove last semicolon
-        #plotstring = plotstring[:-1]
-        #plotlegend = plotlegend[:-1]
-        #print 'plotstring = ', plotstring
-        #print 'plotlegend = ', plotlegend
-                
-        #lines = eval("ax.plot(" + plotstring + ")")
-        leg = ax.legend()
-        lines = ax.get_lines()
-        ax.set_xlabel('time')
-        ax.set_ylabel(variable)
-        plt.grid()
-        
         return [fig, lines, leg]
+        
 
     def scatterplot(self, X, Y):
         '''
@@ -1813,8 +1762,8 @@ class Simdex:
         
            
         # 1. and 2.
-        toplot_X = self.get(X)
-        toplot_Y = self.get(Y)
+        toplot_X = self.get(X).val
+        toplot_Y = self.get(Y).val
         
         
         # 3. and 4.
