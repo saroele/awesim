@@ -1953,7 +1953,7 @@ class Result(object):
     basic operations and functions to it. 
     """
     
-    def __init__(self, values, time=None, identifiers=None):
+    def __init__(self, values, time=None, identifiers=None, **kwargs):
         """
         Instantiate a Result object. 
         
@@ -1962,25 +1962,91 @@ class Result(object):
         
         values = dictionary {sid:values}
         time (optional) = dictionary {sid:time}
-        identifiers (optional) = dictionary {sid:identifier}.
+        identifiers (optional) = dictionary {sid:identifier}
+        **kwargs are converted into attributes.  This is useful to pass eg. the 
+        year for the data (use for example year=2010)
         
         """
         
         self.val = values
         if time is not None:
             self.time = time
+            self.time4plots = {}
         if identifiers is not None:
             self.identifiers = identifiers
+        self.simulations = sorted(self.val.keys())
+        
+        for k,v in kwargs.items():
+            setattr(self, k, v)
             
     def values(self):
         """
-        Return an array with as columns, the values of the variable in the order 
+        Return a list with as elements, the values of the variable in the order 
         of the sid's
         """
         
-        return np.column_stack((self.val[sid] for sid in sorted(self.val.keys())))
+        return [self.val[sid] for sid in self.simulations]
+        
+    def trapz(self):
+        """
+        Integrate the values(time) using the composite trapezoidal rule
+        Returns an array with the integrated values, in sorted order
+        """
+        
+        if not hasattr(self, 'time'):
+            raise AttributeError("This Result object has no attribute 'time'")
+        
+        result = []
+        for sid in self.simulations:
+            result.append(np.trapz(self.val[sid], x=self.time[sid]))
+        
+        return np.array(result)
+        
+    def plot(self, ylabel=None):
+        """
+        Creates a matplotlib figure with a simple plot of the timeseries for 
+        each of the simulations in self.val
+        
+        A string can be passed (ylabel) that will be used to label the y-axis
+        """
+        
+        # In order to plot the timeseries nicely with dates, we use plot_date()
+        def create_time4plot(sid):
+            """Convert time into matplotlib format"""
+            start = datetime(self.year, 1, 1)
+            datetimes = [start + timedelta(t/86400.) for t in self.time[sid]]
+            self.time4plots[sid] = date2num(datetimes)
+            
+        # check existence of attributes
+        if not hasattr(self, 'year'):
+            print 'We suppose the data is for 2011'
+            self.year=2011
+       
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.hold = True        
 
-
+        for sid in self.simulations:
+            try:
+                label = self.identifiers[sid]
+            except KeyError:
+                label=sid
+            
+            if not self.time4plots.has_key(sid):
+                create_time4plot(sid)
+                
+            ax.plot_date(self.time4plots[sid], self.val[sid], fmt='', ls = '-', 
+                         label=label)            
+                
+        leg = ax.legend()
+        lines = ax.get_lines()
+        ax.set_xlabel('time')
+        ax.set_ylabel(ylabel)
+        plt.grid()
+        
+        return [fig, lines, leg]
+            
+        
 
 class Process(object):
     """

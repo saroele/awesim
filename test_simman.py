@@ -138,13 +138,34 @@ class ResultTest(unittest.TestCase):
         self.assertEqual(res.val, self.values)
         self.assertTrue(hasattr(res, 'time'))
         self.assertTrue(hasattr(res, 'identifiers'))
+        
+    def test___init__3(self):
+        """Initiation of a Result with additional **kwargs"""
+        res = Result(self.values, self.time, self.identifiers, year=2010)
+        
+        self.assertEqual(res.val, self.values)
+        self.assertTrue(hasattr(res, 'time'))
+        self.assertTrue(hasattr(res, 'identifiers'))
+        
+        self.assertEqual(res.year, 2010)
 
     def test_values(self):
         """Get values correctly sorted"""
         res = Result(self.values, self.time, self.identifiers)
         v=res.values()
+        self.assertTrue(np.all(v[0]==np.array([1,3,5,7])))
+        self.assertTrue(np.all(v[1]==np.array([2,8])))
+        self.assertTrue(np.all(v[2]==np.arange(4)))
         
-        self.assertEqual(np.column_stack(
+    def test_trapz(self):
+        """Integrate the values according to provide time"""
+        res = Result(self.values, self.time, self.identifiers)
+        v=res.trapz()
+        
+        self.assertEqual(v[0], np.trapz(np.array([1,3,5,7]), x=np.arange(4)))
+        self.assertEqual(v[1], np.trapz(np.array([2,8]), x=np.array([0,1])))
+        self.assertEqual(v[2], np.trapz(np.arange(4), x=np.arange(4)))
+        
 
 class SimulationTest(unittest.TestCase):
     """
