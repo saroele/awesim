@@ -601,32 +601,6 @@ class Simulation:
                 d = convert(p)
                 result.update(d)
         
-        if process.aggregate is not None:
-            for name, actions in process.aggregate.iteritems():
-                # there can be more than one action, check that first
-                if isinstance(actions, str):
-                    # actions is probably single string, or maybe string with spaces                    
-                    actionslist = actions.split()
-                else:
-                    actionslist = actions
-                for action in actionslist:
-                    if action == 'sum':
-                        extension='_Total'
-                    elif action == 'mean':
-                        extension = '_Mean'
-                    elif action == 'each':
-                        extension = '_Each'
-                    else:
-                        raise NotImplementedError('Unknown action for aggregation: %s' % (action))
-                                    
-                    array = np.array([result[m + '_' + name] for m in process.mothers])
-                    if extension == '_Each':
-                        result[name+extension] = array
-                    else:
-                        expression = ''.join(['np.', action, '(array, axis=0)']) 
-                        result[name+extension] = eval(expression, globals(), {'array':array})
-                
-        
         result.pop('aggregate_by_hour')        
         return result
         
@@ -2049,15 +2023,9 @@ class Process(object):
     """
     
     def __init__(self, mothers=None, parameters=None, sub_pars=None, variables=None,
-                 sub_vars=None, pp=None, integrate=None, aggregate=None):
+                 sub_vars=None, pp=None, integrate=None):
         """Instantiate the Process object
         
-        aggregate = dictionary, keys are variable names, values is a string 
-        or list of strings, containing 'sum', 'mean' or 'each'
-        ==> a corresponding variable with extension '_Total', '_Mean' or '_Each'
-            will be created.  Take care with 'each', it blows up the size of the
-            result object
-            
         Note for pp: surround the names of variables by spaces so they can be
         looked up in the parameters and variables dictionaries.
         
@@ -2123,8 +2091,7 @@ class Process(object):
         if pp is not None:
             self.pp.extend(pp)
             
-        self.aggregate = aggregate
-
+        
         
     def __str__(self):
         """Return a print string"""

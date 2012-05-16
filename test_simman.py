@@ -89,24 +89,7 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(p.pp, ['Qflow_Int = np.trapz( Qflow , Time ,axis=0)*'+str(J2kWh)+' if Qflow .shape[0]== Time .shape[0] else np.array([0.0])',
                                 'Qflow10 = 10 * Qflow'])
                                        
-    def test_init_aggregation(self):
-        """init process with variables to aggregate"""
-        
-        vars_to_aggregate = {'Qflow': 'sum', 'Qflow': 'mean'}
-                             
-        p = Process(mothers=self.mothers, parameters=self.parameters, 
-                    sub_pars=self.sub_pars, variables=self.variables, 
-                    sub_vars=self.sub_vars, pp=self.pp, 
-                    aggregate=vars_to_aggregate)
 
-        self.assertEqual(p.parameters, {'cap1':'c1.C', 'res':'r.R',
-                                        'c1_cap':'c1.C', 'c2_cap':'c2.C'})        
-        self.assertEqual(p.variables, {'Time':'Time', 
-                                       'c1_Qflow':'c1.heatPort.Q_flow',
-                                       'c2_Qflow':'c2.heatPort.Q_flow'}) 
-        self.assertEqual(p.pp, ['Qflow10 = 10 * Qflow'])
-                                       
-        
 
 class ResultTest(unittest.TestCase):
     """Class for testing Result"""
@@ -471,50 +454,7 @@ class SimulationTest(unittest.TestCase):
         self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
         self.assertIsNotNone(result_pp['Time_Int'])     
         
-    def test_postprocess_aggregation(self):
-        """Postprocessing with aggregation"""
-        
-        vars_to_aggregate = {'Q': ['sum', 'mean', 'each'], 'T': 'mean'}
-        J2kWh = 1e-6/3.6
-        vars_to_integrate = {'Q':J2kWh, 'Time':1}
-        
-        sim = Simulation('LinkedCapacities')
-        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
-                          sub_pars={'cap':'C'},
-                          pp = ['T_degC = T + 273.15', 
-                                'T_max =  np.amax( T_degC )',
-                                'Thigh = np.nonzero( T_degC > 640)[0]',
-                                'Qsel = Q [ Thigh ]'],
-                          integrate = vars_to_integrate,
-                          aggregate = vars_to_aggregate)
-        result_pp = sim.postprocess(process)
-        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
-        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
-        self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
-        self.assertIsNotNone(result_pp['Time_Int'])
-        self.assertAlmostEqual(result_pp['Q_Total'][3],
-                               result_pp['c1_Q'][3] + result_pp['c2_Q'][3])
-        self.assertAlmostEqual(result_pp['Q_Mean'][3],
-                               (result_pp['c1_Q'][3] + result_pp['c2_Q'][3])/2.)
-        self.assertEqual(np.sum(result_pp['Q_Each'], axis=0)[3], result_pp['Q_Total'][3])
-        self.assertAlmostEqual(result_pp['T_Mean'][16],
-                               (result_pp['c1_T'][16] + result_pp['c2_T'][16])/2.)
-                              
-                      
 
-#    def test_postprocess_multilinestring(self):
-#        """See if a multiline string also works"""
-#        
-#        sim = Simulation('LinkedCapacities')
-#        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
-#                          sub_pars={'cap':'C'},
-#                          pp = ['T_degC = T + 273.15', 
-#                                'T_max =  np.amax( T_degC )',
-#                                """if T_max > 640: """])
-#        result_pp = sim.postprocess(process)
-#        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
-#        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
-        
         
 class SimdexTest(unittest.TestCase):
     """
