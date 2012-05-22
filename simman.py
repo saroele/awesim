@@ -1962,23 +1962,30 @@ class Result(object):
         It does not seem a good idea to return an array by default, cause the 
         variables for different SID's can have different lengths. 
         Exception: when the length of each of the variables is 1, a reshaped 
-        array is returned
+        array is returned.
+        
+        If a value in a single length array is None, it is replaced by NaN in the
+        returned array.
         """
         
-        result = [self.val[sid] for sid in self.simulations if self.val[sid] is not None]
+        result = [self.val[sid] for sid in self.simulations]
         print "result === " , result
         lengths=[]
-        for x in result:
+        for i,x in enumerate(result):
             try:
                 l = len(x)
             except TypeError:
                 # x is a value, it is a numpy.float64, so length=1
+                if x is None:
+                    result[i]=np.NaN
                 l = 1
             lengths.append(l)
                     
-        lengths = np.array(lengths)
-        if np.all(lengths==1):
-            return np.array(result).reshape(len(lengths))
+        ls = np.array(lengths)
+        print 'lengths == ', ls
+        print 'result == ', result
+        if np.all(ls==1):
+            return np.array(result).reshape(len(ls))
         else:
             return result
         
