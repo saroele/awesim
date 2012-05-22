@@ -1573,12 +1573,15 @@ class Simdex:
         Return a Result instance with SID:value pairs for par or var name
         
         If the name is a sub-variable, the corresponding variable for all
-        mothers will be extracted and put in a single array.  
+        mothers will be extracted and put in a single array according to aggregate.  
         
         aggregate = None, 'sum' or 'mean' : if None, the values in the Result
         object will contain the trajectories for all variables.  
         If aggregate is 'sum', all trajectories are summed, if it is 'mean', 
         the mean value of all trajectories is computed.
+        
+        If name is a parameter and a simulation does NOT have the parameter, 
+        the value in the result object is None.
         
         """
         
@@ -1955,9 +1958,29 @@ class Result(object):
         """
         Return a list with as elements, the values of the variable in the order 
         of the sid's
+        
+        It does not seem a good idea to return an array by default, cause the 
+        variables for different SID's can have different lengths. 
+        Exception: when the length of each of the variables is 1, a reshaped 
+        array is returned
         """
         
-        return [self.val[sid] for sid in self.simulations]
+        result = [self.val[sid] for sid in self.simulations if self.val[sid] is not None]
+        print "result === " , result
+        lengths=[]
+        for x in result:
+            try:
+                l = len(x)
+            except TypeError:
+                # x is a value, it is a numpy.float64, so length=1
+                l = 1
+            lengths.append(l)
+                    
+        lengths = np.array(lengths)
+        if np.all(lengths==1):
+            return np.array(result).reshape(len(lengths))
+        else:
+            return result
         
     def trapz(self):
         """

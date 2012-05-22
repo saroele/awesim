@@ -934,10 +934,10 @@ class SimdexTest(unittest.TestCase):
         c1_C = self.simdex.get('c1.C').values()
         c1_C.sort()
         print '\n'*10, 'c1_C = ', c1_C
-        exp_result_sorted = [None,   600.,   600.,   800.,  
-                                      800.,   800.,   800., 1000.]
+        exp_result_sorted = np.array([600.,   600.,   800.,  
+                                      800.,   800.,   800., 1000.])
         
-        self.assertEqual(exp_result_sorted , c1_C)
+        self.assertTrue(np.all(exp_result_sorted == c1_C))
         self.simdex.h5.close()
         
         
@@ -958,9 +958,9 @@ class SimdexTest(unittest.TestCase):
         
         c1_C = self.simdex.get('parc').values()
         c1_C.sort()
-        exp_result_sorted = [None,   600.,   600.,   800.,  
-                                      800.,   800.,   800., 1000.]
-        self.assertTrue(exp_result_sorted == c1_C)
+        exp_result_sorted = np.array([600.,   600.,   800.,  
+                                      800.,   800.,   800., 1000.])
+        self.assertTrue(np.all(exp_result_sorted == c1_C))
         self.simdex.h5.close()        
         
     def test_get_sub_var(self):
