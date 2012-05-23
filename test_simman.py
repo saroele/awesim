@@ -986,7 +986,7 @@ class SimdexTest(unittest.TestCase):
             self.assertTrue(np.all(Q1[sid] == Q[sid][:,0]))
             self.assertTrue(np.all(Q2[sid] == Q[sid][:,1]))
 
-    def test_get_sub_var(self):
+    def test_get_sub_var2(self):
         """Simdex.get() should return correctly for sum and mean-aggregated subvariables"""
         
         self.simdex.h5.close()

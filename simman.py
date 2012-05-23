@@ -576,12 +576,12 @@ class Simulation:
             This function can be used in the post-processing
             """
             
-            hourday=np.mod(time/3600., 24.0)
+            day_seconds=np.mod(time, 86400)
                 
             result = np.zeros(86400/interval)
-            for i in np.arange(0, 24, interval/3600.):
-                ind = np.nonzero(hourday == i)
-                result[i*3600/interval] = var[ind].sum()/ind[0].shape[0]
+            for i in np.arange(0, 86400, interval):
+                ind = (day_seconds >= i)*(day_seconds < i+interval)
+                result[i/interval] = np.mean(var[ind])
                       
             return result        
         
