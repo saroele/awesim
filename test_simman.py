@@ -961,7 +961,8 @@ class SimdexTest(unittest.TestCase):
         c1_C.sort()
         exp_result_sorted = np.array([600.,   600.,   800.,  
                                       800.,   800.,   800., 1000., np.NaN])
-        self.assertTrue(((c1_C == exp_result_sorted) | (np.isnan(c1_C) & np.isnan(exp_result_sorted))).all())
+        #self.assertTrue(((c1_C == exp_result_sorted) | (np.isnan(c1_C) & np.isnan(exp_result_sorted))).all())
+        np.testing.assert_equal(c1_C , exp_result_sorted)
         self.simdex.h5.close()        
         
     def test_get_sub_var(self):
