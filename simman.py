@@ -111,6 +111,7 @@ import cPickle as pickle
 import bisect
 import tables as tbl
 from datetime import datetime, timedelta
+import pandas
 
 
 #from enthought.traits.api import *
@@ -567,32 +568,47 @@ class Simulation:
             return returndic
             
 
-        def aggregate_by_time(var, time, period=86400, interval=900):
+        def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
             """
             Function to calculate the aggregated average of a timeseries by 
             period (typical a day) in bins of interval seconds (default = 900s).
+            
+            label = 'left' or 'right'.  'Left' means that the label i contains data from 
+            i till i+1, 'right' means that label i contains data from i-1 till i.    
             
             Returns an array with period/interval values, one for each interval
             of the period. 
             
             A few limitations of the method:
                 - the period has to be a multiple of the interval
-                - the time vector needs to have AT LEAST an entry at each interval 
-                  boundary
+                - periods larger than 1 day are not supported yet
             
-            This function can be used in the post-processing.
-            This function was proposed on www.stackoverflow.com on a question of
-            RDC about aggregation of data.
+            This function can be used in the post-processing
             """
-            assert (period % interval) == 0
-            ipp = period / interval
-        
-            midpoint = np.r_[time[0], (time[1:] + time[:-1])/2., time[-1]]
-            cumsig = np.r_[0, (np.diff(midpoint) * var).cumsum()]
-            grid = np.linspace(0, time[-1], np.floor(time[-1]/period)*ipp + 1)
-            cumsig = np.interp(grid, midpoint, cumsig)
             
-            return np.diff(cumsig).reshape(-1, ipp).sum(0) / period   
+            def make_datetimeindex(array_in_seconds, year):
+                """
+                Create a pandas DateIndex from a time vector in seconds and the year.
+                """
+                
+                start = pandas.datetime(year, 1, 1)
+                datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
+                
+                return pandas.DatetimeIndex(datetimes)
+            
+            interval_string = str(interval) + 'S'    
+            dr = make_datetimeindex(time, 2012)
+            df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
+            df15min = df.resample(interval_string, closed=label, label=label)
+            
+            # now create bins for the groupby() method
+            time_s = df15min.index.asi8/1e9
+            time_s -= time_s[0]
+            df15min['bins'] = np.mod(time_s, period)
+            
+            df_aggr = df15min.groupby(['bins']).mean()
+            
+            return df_aggr.values   
 
 
         
