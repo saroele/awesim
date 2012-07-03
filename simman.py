@@ -567,8 +567,18 @@ class Simulation:
 
             return returndic
             
-
-        def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
+        def make_datetimeindex(array_in_seconds, year):
+            """
+            Create a pandas DateIndex from a time vector in seconds and the year.
+            """
+            
+            start = pandas.datetime(year, 1, 1)
+            datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
+            
+            return pandas.DatetimeIndex(datetimes)
+        
+        
+        def aggregate_by_time(signal, period=86400, interval=900, label='left'):
             """
             Function to calculate the aggregated average of a timeseries by 
             period (typical a day) in bins of interval seconds (default = 900s).
@@ -586,19 +596,10 @@ class Simulation:
             This function can be used in the post-processing
             """
             
-            def make_datetimeindex(array_in_seconds, year):
-                """
-                Create a pandas DateIndex from a time vector in seconds and the year.
-                """
-                
-                start = pandas.datetime(year, 1, 1)
-                datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
-                
-                return pandas.DatetimeIndex(datetimes)
+            
             
             interval_string = str(interval) + 'S'    
-            dr = make_datetimeindex(time, 2012)
-            df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
+            df = pandas.DataFrame(data=signal, index=dt_index, columns=['signal'])
             df15min = df.resample(interval_string, closed=label, label=label)
             
             # now create bins for the groupby() method
@@ -616,8 +617,12 @@ class Simulation:
         vars_and_pars.update(process.variables)
         vars_and_pars.update(process.parameters)
         result = self.extract(vars_and_pars, arrays='each')
-        # pass the function to the dictionary in order to get it in the namespace
+        # pass the function aggregate_by_time to the dictionary 
+        # in order to get it in the namespace + create the datetimeindex
         result['aggregate_by_time'] = aggregate_by_time
+        global dt_index
+        dt_index = make_datetimeindex(result['Time'], 2010)
+        
         if process.mothers not in (None, []):
             result['mothers'] = process.mothers
         
@@ -628,7 +633,7 @@ class Simulation:
                 d = convert(p)
                 result.update(d)
         
-        result.pop('aggregate_by_time')        
+        result.pop('aggregate_by_time') 
         return result
         
 
