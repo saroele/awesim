@@ -112,6 +112,7 @@ import bisect
 import tables as tbl
 from datetime import datetime, timedelta
 import pandas
+import pdb
 
 
 #from enthought.traits.api import *
@@ -597,10 +598,15 @@ class Simulation:
             """
             
             
-            
+            #pdb.set_trace()
             interval_string = str(interval) + 'S'    
             df = pandas.DataFrame(data=signal, index=dt_index, columns=['signal'])
-            df15min = df.resample(interval_string, closed=label, label=label)
+            try:
+                df15min = df.resample(interval_string, closed=label, label=label)
+            except:
+                print "\nThis exception could be the result of a resampling to \
+                a higher frequency than the timestep of the results\n"
+                raise
             
             # now create bins for the groupby() method
             time_s = df15min.index.asi8/1e9
