@@ -833,12 +833,17 @@ class Simdex:
             
         return s
                     
-    def scan(self, folder='', process=None):
+    def scan(self, folder='', process=None, timecheck=True):
         """
-        Scan the folder for .mat files that are simulation results, and 
-        add them to the simdex
-        Folder is a single folder to be sought for .mat files
-        If folder = '', the current work directory is indexed
+        Scan a folder for .mat files and add them to the simdex
+        
+        Parameters
+        ----------
+        - folder: a single folder to be sought for .mat files
+          If folder == '', the current work directory is indexed
+        - process: a post-processing to be applied to each mat file
+        - timecheck: if True, verify that all indexed simulations have the 
+          same start and stop times.  
         
         """
         
@@ -911,20 +916,24 @@ class Simdex:
                 except :
                     pass
                 else:
-                    # Now, check the simulation runtime against previously confirmed
-                    # start and stop times
-                    time = sim.get_value('Time')
-                    
-                    if self.simulationstart == time[0] and \
-                        self.simulationstop == time[-1]:
+                    if timecheck:                    
+                        # Now, check the simulation runtime against previously 
+                        # confirmed start and stop times
+                        time = sim.get_value('Time')
+                        
+                        if self.simulationstart == time[0] and \
+                            self.simulationstop == time[-1]:
+                            # index this new simulation 
+                            self.index_one_sim(sim, process=process)
+                            print '%s indexed' % (sim.filename)
+                                                
+                        else:
+                            print '%s, runs from %d s till %d s, therefore, it \
+                               is NOT indexed' % (sim.filename, time[0],time[-1])
+                    else:
                         # index this new simulation 
                         self.index_one_sim(sim, process=process)
                         print '%s indexed' % (sim.filename)
-                                            
-                    else:
-                        print '%s, runs from %d s till %d s, therefore, it is NOT \
-                             indexed' % (sim.filename, time[0],time[-1])
-                
                 index += 1
         
         else:
