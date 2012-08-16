@@ -383,7 +383,7 @@ class Simulation:
                    to make postprocessing more straightforward and robust
         """
         
-        
+        pdb.set_trace()
                 
         r = {}
         for short_name in var:        
@@ -514,6 +514,8 @@ class Simulation:
             as result of a single postprocessing line string
             """
 
+            pdb.set_trace()
+            
             returndic = {}
             splitted = string.split(' ')
             # First check if we need to loop over the mothers
@@ -993,7 +995,7 @@ class Simdex:
         the corresponding list.
         
         Attention: if you want to check if eg.  c[3].T exists, you have to 
-        escape the [ and ] with a backlslash, like this:
+        escape the [ and ] with a backslash, like this:
         self.exist('c\[3\].T). Otherwise c3.T is sought for. This is 
         because in regex syntax, [] is used to indicate a set of characters.
         '''
@@ -1245,7 +1247,8 @@ class Simdex:
 
             Still to add: extraction of metadata from the log
             """
-                        
+            
+            #pdb.set_trace()
             var_grp = self.h5.getNode('/', key)
            
             if process is None:
@@ -2197,7 +2200,7 @@ class Process(object):
         looked up in the parameters and variables dictionaries.
         
         """
-        
+        #pdb.set_trace()
         pp_int = []
                
         # make/complete the variables and parameter dicts, full paths
@@ -2214,18 +2217,23 @@ class Process(object):
         if mothers is not None:
             self.mothers = copy.copy(mothers)
             for m in self.mothers:
+                m_orig = copy.copy(m)
+                m = m.replace('[', '_')
+                m = m.replace(']', '')
                 if sub_vars is not None:
                     self.sub_vars = copy.copy(sub_vars)                    
                     for shortname, longname in self.sub_vars.iteritems():
-                        self.variables['_'.join([m, shortname])] = '.'.join([m, longname])
+                        self.variables['_'.join([m, shortname])] = '.'.join([m_orig, longname])
                 else:
                     self.sub_vars = {}
                 if sub_pars is not None:
                     self.sub_pars = copy.copy(sub_pars)
                     for shortname, longname in self.sub_pars.iteritems():
-                        self.parameters['_'.join([m, shortname])] = '.'.join([m, longname])
+                        self.parameters['_'.join([m, shortname])] = '.'.join([m_orig, longname])
                 else:
                     self.sub_pars = {}
+            self.mothers = [m.replace('[', '_') for m in self.mothers]
+            self.mothers = [m.replace(']', '') for m in self.mothers]
         else:
             self.mothers = []
         # paramaeters = contains short and long names of the parameters we need.
