@@ -383,15 +383,20 @@ class Simulation:
                    to make postprocessing more straightforward and robust
         """
         
-        pdb.set_trace()
+        #pdb.set_trace()
                 
         r = {}
         for short_name in var:        
             long_name = var[short_name]
             # check for array first            
             if long_name.find('[x]') > -1:
+                # first, escape the \ and ] if there is an integer between them
+                var_name = long_name.replace('[', '\[').replace(']', '\]').replace('\[x\]', '[x]')
+                
+                # alternative: with REGEX like this
+                # re.sub(r'\[(\d+)\]', r'\[\1\]', var_name)   but this is slower!             
                 # treat the array                
-                var_name = long_name.replace('[x]', '\[[0-9]*\]')
+                var_name = var_name.replace('[x]', '\[[0-9]*\]')
                 var_name = var_name + '$'
                 # we make a list of all present array variables                    
                 array_vars = self.exist(var_name)
@@ -514,7 +519,7 @@ class Simulation:
             as result of a single postprocessing line string
             """
 
-            pdb.set_trace()
+            #pdb.set_trace()
             
             returndic = {}
             splitted = string.split(' ')
