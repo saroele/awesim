@@ -13,7 +13,7 @@ from os import getcwd, path, remove
 from cStringIO import StringIO
 import sys
 import matplotlib
-from simman import Simulation, Simdex, Process, load_simdex
+from simman import Simulation, Simdex, Result, Process, load_simdex
 
 
 class ProcessTest(unittest.TestCase):
@@ -89,23 +89,69 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(p.pp, ['Qflow_Int = np.trapz( Qflow , Time ,axis=0)*'+str(J2kWh)+' if Qflow .shape[0]== Time .shape[0] else np.array([0.0])',
                                 'Qflow10 = 10 * Qflow'])
                                        
-    def test_init_aggregation(self):
-        """init process with variables to aggregate"""
-        
-        vars_to_aggregate = {'Qflow': 'sum', 'Qflow': 'mean'}
-                             
-        p = Process(mothers=self.mothers, parameters=self.parameters, 
-                    sub_pars=self.sub_pars, variables=self.variables, 
-                    sub_vars=self.sub_vars, pp=self.pp, 
-                    aggregate=vars_to_aggregate)
+    def test_init_mothers_as_arrays(self):
+        """init Process with array mothers"""
+        process = Process(mothers=['c[1]', 'c[2]', 'c1'], sub_vars={'T':'T'})
+        self.assertEqual(process.variables, {'Time':'Time',
+                                             'c_1_T':'c[1].T', 'c_2_T':'c[2].T', 'c1_T':'c1.T'})
 
-        self.assertEqual(p.parameters, {'cap1':'c1.C', 'res':'r.R',
-                                        'c1_cap':'c1.C', 'c2_cap':'c2.C'})        
-        self.assertEqual(p.variables, {'Time':'Time', 
-                                       'c1_Qflow':'c1.heatPort.Q_flow',
-                                       'c2_Qflow':'c2.heatPort.Q_flow'}) 
-        self.assertEqual(p.pp, ['Qflow10 = 10 * Qflow'])
-                                       
+class ResultTest(unittest.TestCase):
+    """Class for testing Result"""
+    
+    def setUp(self):
+        self.values = {'c':np.arange(4), 
+                       'a':np.array([1,3,5,7]), 
+                       'b':np.array([2,8])}
+        self.time = {'c':np.arange(4), 
+                       'a':np.arange(4), 
+                       'b':np.array([0,1])}
+        self.identifiers = {'c':'sim C', 
+                       'a':'sim A', 
+                       'b':'sim B'}
+    
+    
+    def test___init__(self):
+        """Initiation of a Result with only values"""
+        res = Result(self.values)
+        
+        self.assertEqual(res.val, self.values)
+        self.assertFalse(hasattr(res, 'time'))
+        self.assertFalse(hasattr(res, 'identifiers'))
+        
+    def test___init__2(self):
+        """Initiation of a Result with time and identifiers"""
+        res = Result(self.values, self.time, self.identifiers)
+        
+        self.assertEqual(res.val, self.values)
+        self.assertTrue(hasattr(res, 'time'))
+        self.assertTrue(hasattr(res, 'identifiers'))
+        
+    def test___init__3(self):
+        """Initiation of a Result with additional **kwargs"""
+        res = Result(self.values, self.time, self.identifiers, year=2010)
+        
+        self.assertEqual(res.val, self.values)
+        self.assertTrue(hasattr(res, 'time'))
+        self.assertTrue(hasattr(res, 'identifiers'))
+        
+        self.assertEqual(res.year, 2010)
+
+    def test_values(self):
+        """Get values correctly sorted"""
+        res = Result(self.values, self.time, self.identifiers)
+        v=res.values()
+        self.assertTrue(np.all(v[0]==np.array([1,3,5,7])))
+        self.assertTrue(np.all(v[1]==np.array([2,8])))
+        self.assertTrue(np.all(v[2]==np.arange(4)))
+        
+    def test_trapz(self):
+        """Integrate the values according to provide time"""
+        res = Result(self.values, self.time, self.identifiers)
+        v=res.trapz()
+        
+        self.assertEqual(v[0], np.trapz(np.array([1,3,5,7]), x=np.arange(4)))
+        self.assertEqual(v[1], np.trapz(np.array([2,8]), x=np.array([0,1])))
+        self.assertEqual(v[2], np.trapz(np.arange(4), x=np.arange(4)))
         
 
 class SimulationTest(unittest.TestCase):
@@ -412,50 +458,7 @@ class SimulationTest(unittest.TestCase):
         self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
         self.assertIsNotNone(result_pp['Time_Int'])     
         
-    def test_postprocess_aggregation(self):
-        """Postprocessing with aggregation"""
-        
-        vars_to_aggregate = {'Q': ['sum', 'mean', 'each'], 'T': 'mean'}
-        J2kWh = 1e-6/3.6
-        vars_to_integrate = {'Q':J2kWh, 'Time':1}
-        
-        sim = Simulation('LinkedCapacities')
-        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
-                          sub_pars={'cap':'C'},
-                          pp = ['T_degC = T + 273.15', 
-                                'T_max =  np.amax( T_degC )',
-                                'Thigh = np.nonzero( T_degC > 640)[0]',
-                                'Qsel = Q [ Thigh ]'],
-                          integrate = vars_to_integrate,
-                          aggregate = vars_to_aggregate)
-        result_pp = sim.postprocess(process)
-        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
-        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
-        self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
-        self.assertIsNotNone(result_pp['Time_Int'])
-        self.assertAlmostEqual(result_pp['Q_Total'][3],
-                               result_pp['c1_Q'][3] + result_pp['c2_Q'][3])
-        self.assertAlmostEqual(result_pp['Q_Mean'][3],
-                               (result_pp['c1_Q'][3] + result_pp['c2_Q'][3])/2.)
-        self.assertEqual(np.sum(result_pp['Q_Each'], axis=0)[3], result_pp['Q_Total'][3])
-        self.assertAlmostEqual(result_pp['T_Mean'][16],
-                               (result_pp['c1_T'][16] + result_pp['c2_T'][16])/2.)
-                              
-                      
 
-#    def test_postprocess_multilinestring(self):
-#        """See if a multiline string also works"""
-#        
-#        sim = Simulation('LinkedCapacities')
-#        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
-#                          sub_pars={'cap':'C'},
-#                          pp = ['T_degC = T + 273.15', 
-#                                'T_max =  np.amax( T_degC )',
-#                                """if T_max > 640: """])
-#        result_pp = sim.postprocess(process)
-#        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
-#        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
-        
         
 class SimdexTest(unittest.TestCase):
     """
@@ -657,8 +660,8 @@ class SimdexTest(unittest.TestCase):
                          'get_identical on LinkedCapacities_C.mat should \
                          return the files mentioned in exp_results')
         c1_C_f = self.simdex_filtered.get('c1.C')                 
-        for sid in c1_C_f:
-            self.assertEqual(c1_C[sid], c1_C_f[sid])
+        for sid in c1_C_f.val:
+            self.assertEqual(c1_C.val[sid], c1_C_f.val[sid])
                  
     def test_filter_remove(self):
         """Simdex.filter_remove() should remove only selected SIDs"""
@@ -686,8 +689,8 @@ class SimdexTest(unittest.TestCase):
         shape_filtered = filtered.parametermap.shape
         self.assertEqual(shape[1]-1, shape_filtered[1])
         c1_C_f = filtered.get('c1.C')
-        for sid in c1_C_f:
-            self.assertEqual(c1_C[sid], c1_C_f[sid])
+        for sid in c1_C_f.val:
+            self.assertEqual(c1_C.val[sid], c1_C_f.val[sid])
 
 
         self.simdex.h5.close()  
@@ -935,10 +938,11 @@ class SimdexTest(unittest.TestCase):
         c1_C = self.simdex.get('c1.C').values()
         c1_C.sort()
         print '\n'*10, 'c1_C = ', c1_C
-        exp_result_sorted = [None,   600.,   600.,   800.,  
-                                      800.,   800.,   800., 1000.]
-        
-        self.assertEqual(exp_result_sorted , c1_C)
+        exp_result_sorted = np.array([600.,   600.,   800.,  
+                                      800.,   800.,   800., 1000., np.NaN])
+        print c1_C
+        print exp_result_sorted
+        self.assertTrue(((c1_C == exp_result_sorted) | (np.isnan(c1_C) & np.isnan(exp_result_sorted))).all())
         self.simdex.h5.close()
         
         
@@ -952,26 +956,76 @@ class SimdexTest(unittest.TestCase):
         self.simdex = Simdex(folder=getcwd(), process=process)        
         result = self.simdex.get('T2')
         expectedsids = self.simdex.get_SID('linkedcapacities')
-        self.assertEqual(sorted(result.keys()), sorted(expectedsids))
+        self.assertEqual(sorted(result.val.keys()), sorted(expectedsids))
         sim = Simulation('LinkedCapacities_B.mat')
         sid = self.simdex.get_SID('LinkedCapacities_B')[0]
-        self.assertTrue(np.all(result[sid]==sim.get_value('c2.T')))
+        self.assertTrue(np.all(result.val[sid]==sim.get_value('c2.T')))
         
         c1_C = self.simdex.get('parc').values()
         c1_C.sort()
-        exp_result_sorted = [None,   600.,   600.,   800.,  
-                                      800.,   800.,   800., 1000.]
-        self.assertTrue(exp_result_sorted == c1_C)
+        exp_result_sorted = np.array([600.,   600.,   800.,  
+                                      800.,   800.,   800., 1000., np.NaN])
+        #self.assertTrue(((c1_C == exp_result_sorted) | (np.isnan(c1_C) & np.isnan(exp_result_sorted))).all())
+        np.testing.assert_equal(c1_C , exp_result_sorted)
         self.simdex.h5.close()        
+        
+    def test_get_sub_var(self):
+        """Simdex.get() should return correctly for aggregated subvariables"""
+        
+        self.simdex.h5.close()
+        
+        mothers=['c1', 'c2']
+        parameters={'cap1':'c1.C', 'res':'r.R'}
+        sub_pars={'cap':'C'}
+        sub_vars={'Qflow':'heatPort.Q_flow'}        
+        process=Process(parameters=parameters, sub_vars = sub_vars, 
+                        mothers=mothers, sub_pars=sub_pars)
+
+        self.simdex = Simdex(folder=getcwd(), process=process)        
+
+        Q1 = self.simdex.get('c1_Qflow').val
+        Q2 = self.simdex.get('c2_Qflow').val
+        Q = self.simdex.get('Qflow').val
+        
+        for sid in Q1.keys():        
+            self.assertTrue(np.all(Q1[sid] == Q[sid][:,0]))
+            self.assertTrue(np.all(Q2[sid] == Q[sid][:,1]))
+
+    def test_get_sub_var2(self):
+        """Simdex.get() should return correctly for sum and mean-aggregated subvariables"""
+        
+        self.simdex.h5.close()
+        
+        mothers=['c1', 'c2']
+        parameters={'cap1':'c1.C', 'res':'r.R'}
+        sub_pars={'cap':'C'}
+        sub_vars={'Qflow':'heatPort.Q_flow'}        
+        process=Process(parameters=parameters, sub_vars = sub_vars, 
+                        mothers=mothers, sub_pars=sub_pars)
+
+        self.simdex = Simdex(folder=getcwd(), process=process)        
+
+        Q1 = self.simdex.get('c1_Qflow').val
+        Q2 = self.simdex.get('c2_Qflow').val
+        QSum = self.simdex.get('Qflow', aggregate='sum').val
+        QMean = self.simdex.get('Qflow', aggregate='mean').val
+        
+        for sid in Q1.keys():        
+            self.assertTrue(np.all((Q1[sid]+Q2[sid])/2 == QMean[sid]))
+            self.assertTrue(np.all((Q1[sid]+Q2[sid]) == QSum[sid]))
+
+        self.simdex.h5.close()                
 #if __name__ == '__main__':
 #    unittest.main()
 
 
 suite1 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
-suite2 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
-suite3 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
+suite2 = unittest.TestLoader().loadTestsFromTestCase(ResultTest)
+suite3 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
+suite4 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
 
-alltests = unittest.TestSuite([suite1, suite2, suite3])
+
+alltests = unittest.TestSuite([suite1, suite2, suite3, suite4])
 
 unittest.TextTestRunner(verbosity=0, failfast=True).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)

@@ -8,6 +8,7 @@ from __future__ import division
 import time, os, itertools, shutil
 from subprocess import Popen
 import subprocess
+import sys
 from simman import Simulation, Simdex
 from shutil import copyfile
 import copy
@@ -69,12 +70,16 @@ def set_par(parameter, value, dsin='', copy_to = None):
     parameter_dsin = '# ' + str(parameter)
     dsin_file = open(dsin, 'r+')
     for s in dsin_file:
-        if s.find(parameter) > -1:
-            print 'The parameter', parameter, 'is found in', dsin
         if s.find(parameter_dsin) > -1:
+            print 'The parameter', parameter, 'is found in', dsin
             splitted = s.split()
-            s = s.replace(splitted[1], value)
-            print 'and is replace by', value, '.'
+            try:
+                s = s.replace(splitted[1], value)
+                print 'and is replaced by', value, '.'
+            except TypeError:
+                s = s.replace(splitted[1], str(value))
+                print '\t ==> and is replaced by', value, '.'
+    
     dsin_file.close()
     
     if copy_to != None:
@@ -366,6 +371,28 @@ def run_ds(dymosim = '', dsin = '', result = ''):
         
     proc = Popen(oscmd)
     return proc    
+    
+
+def create_input_file(data, filename):
+    """
+    Create an input file for the TimeTables from the MSL.
+    The input files are in ascii format
+    
+    data has to be an array with time as first column.  All columns of this array
+    will be written in the ascii file.
+    """
+    
+    f = open(filename, 'w')
+    f.write(u'#1\n')
+    shape_string = str(data.shape)
+    f.write(''.join([u'double data', shape_string,  
+                     u'# Profiles created by python script: ', sys.argv[0], 
+                    '\n']))
+    for i in range(data.shape[0]):
+        f.write('\t'.join([str(v) for v in data[i,:]]))
+        f.write('\n')
+    
+    f.close()
     
 
 
