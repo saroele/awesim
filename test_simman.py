@@ -89,7 +89,11 @@ class ProcessTest(unittest.TestCase):
         self.assertEqual(p.pp, ['Qflow_Int = np.trapz( Qflow , Time ,axis=0)*'+str(J2kWh)+' if Qflow .shape[0]== Time .shape[0] else np.array([0.0])',
                                 'Qflow10 = 10 * Qflow'])
                                        
-
+    def test_init_mothers_as_arrays(self):
+        """init Process with array mothers"""
+        process = Process(mothers=['c[1]', 'c[2]', 'c1'], sub_vars={'T':'T'})
+        self.assertEqual(process.variables, {'Time':'Time',
+                                             'c_1_T':'c[1].T', 'c_2_T':'c[2].T', 'c1_T':'c1.T'})
 
 class ResultTest(unittest.TestCase):
     """Class for testing Result"""

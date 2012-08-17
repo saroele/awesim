@@ -383,15 +383,20 @@ class Simulation:
                    to make postprocessing more straightforward and robust
         """
         
-        
+        #pdb.set_trace()
                 
         r = {}
         for short_name in var:        
             long_name = var[short_name]
             # check for array first            
             if long_name.find('[x]') > -1:
+                # first, escape the \ and ] if there is an integer between them
+                var_name = long_name.replace('[', '\[').replace(']', '\]').replace('\[x\]', '[x]')
+                
+                # alternative: with REGEX like this
+                # re.sub(r'\[(\d+)\]', r'\[\1\]', var_name)   but this is slower!             
                 # treat the array                
-                var_name = long_name.replace('[x]', '\[[0-9]*\]')
+                var_name = var_name.replace('[x]', '\[[0-9]*\]')
                 var_name = var_name + '$'
                 # we make a list of all present array variables                    
                 array_vars = self.exist(var_name)
@@ -514,6 +519,8 @@ class Simulation:
             as result of a single postprocessing line string
             """
 
+            #pdb.set_trace()
+            
             returndic = {}
             splitted = string.split(' ')
             # First check if we need to loop over the mothers
@@ -1002,7 +1009,7 @@ class Simdex:
         the corresponding list.
         
         Attention: if you want to check if eg.  c[3].T exists, you have to 
-        escape the [ and ] with a backlslash, like this:
+        escape the [ and ] with a backslash, like this:
         self.exist('c\[3\].T). Otherwise c3.T is sought for. This is 
         because in regex syntax, [] is used to indicate a set of characters.
         '''
@@ -1254,7 +1261,8 @@ class Simdex:
 
             Still to add: extraction of metadata from the log
             """
-                        
+            
+            #pdb.set_trace()
             var_grp = self.h5.getNode('/', key)
            
             if process is None:
@@ -2202,11 +2210,42 @@ class Process(object):
                  sub_vars=None, pp=None, integrate=None):
         """Instantiate the Process object
         
-        Note for pp: surround the names of variables by spaces so they can be
-        looked up in the parameters and variables dictionaries.
+        parameters
+        ----------
+        - mothers: a list of mothers objects, as strings.  Arrays are supported
+          in that case the '[' will be converted into '_' and the ] will be 
+          removed.  Example d[1] becomes d_1.  In combination with a sub_par
+          or sub_var, the . will be replaced by a '_'.  
+          So the shortname for d[12].TSto will be d_12_TSto
+        - parameters: a dictionary with shortname:longname pairs for parameters.
+          The shortnames can be used in postprocessing formulas (see pp)
+        - sub_pars: a dictionary with shortname:longname pairs for parameters 
+          that are children of the mothers.  
+          Example: if you have a c1.TInitialValue and a c2.TInitialValue, 
+          you can have mothers = ['c1', c2'] and 
+          sub_vars = {'TStart': 'TInitialValue'}
+        - variables: analoguous to parameters
+        - sub_vars: analoguous to sub_pars
+        - pp: a list of post-processing strings.  Each string will be executed
+          and will generate a new variable that will be stored and that can be
+          used in following post porcessing strings. If the variable names used
+          in a pp string are sub_vars or sub_pars, the string will be executed
+          for each mother.  
         
+          It is crucial to surround the names of variables by spaces so they can be
+          looked up in the parameters and variables dictionaries.
+
+        - integrate: dictionary with variables to be integrated over time.  
+          The dictionary has shortname:scaling pairs, the scaling factor will
+          be multiplied to the result of np.trapz(shortname, time).  The 
+          resulting value will be stored under shortname_int.  If the shortname
+          is a sub_var, the integration will be done for every mother.
+          
+          Example: mothers = ['c1', c2'], sub_vars = {'Q':'Q_flow'}, 
+          integrate = {'Q':1e-6} will create c1_Q_int and c2_Q_int.
+          
         """
-        
+        #pdb.set_trace()
         pp_int = []
                
         # make/complete the variables and parameter dicts, full paths
@@ -2223,18 +2262,23 @@ class Process(object):
         if mothers is not None:
             self.mothers = copy.copy(mothers)
             for m in self.mothers:
+                m_orig = copy.copy(m)
+                m = m.replace('[', '_')
+                m = m.replace(']', '')
                 if sub_vars is not None:
                     self.sub_vars = copy.copy(sub_vars)                    
                     for shortname, longname in self.sub_vars.iteritems():
-                        self.variables['_'.join([m, shortname])] = '.'.join([m, longname])
+                        self.variables['_'.join([m, shortname])] = '.'.join([m_orig, longname])
                 else:
                     self.sub_vars = {}
                 if sub_pars is not None:
                     self.sub_pars = copy.copy(sub_pars)
                     for shortname, longname in self.sub_pars.iteritems():
-                        self.parameters['_'.join([m, shortname])] = '.'.join([m, longname])
+                        self.parameters['_'.join([m, shortname])] = '.'.join([m_orig, longname])
                 else:
                     self.sub_pars = {}
+            self.mothers = [m.replace('[', '_') for m in self.mothers]
+            self.mothers = [m.replace(']', '') for m in self.mothers]
         else:
             self.mothers = []
         # paramaeters = contains short and long names of the parameters we need.
