@@ -2201,9 +2201,40 @@ class Process(object):
                  sub_vars=None, pp=None, integrate=None):
         """Instantiate the Process object
         
-        Note for pp: surround the names of variables by spaces so they can be
-        looked up in the parameters and variables dictionaries.
+        parameters
+        ----------
+        - mothers: a list of mothers objects, as strings.  Arrays are supported
+          in that case the '[' will be converted into '_' and the ] will be 
+          removed.  Example d[1] becomes d_1.  In combination with a sub_par
+          or sub_var, the . will be replaced by a '_'.  
+          So the shortname for d[12].TSto will be d_12_TSto
+        - parameters: a dictionary with shortname:longname pairs for parameters.
+          The shortnames can be used in postprocessing formulas (see pp)
+        - sub_pars: a dictionary with shortname:longname pairs for parameters 
+          that are children of the mothers.  
+          Example: if you have a c1.TInitialValue and a c2.TInitialValue, 
+          you can have mothers = ['c1', c2'] and 
+          sub_vars = {'TStart': 'TInitialValue'}
+        - variables: analoguous to parameters
+        - sub_vars: analoguous to sub_pars
+        - pp: a list of post-processing strings.  Each string will be executed
+          and will generate a new variable that will be stored and that can be
+          used in following post porcessing strings. If the variable names used
+          in a pp string are sub_vars or sub_pars, the string will be executed
+          for each mother.  
         
+          It is crucial to surround the names of variables by spaces so they can be
+          looked up in the parameters and variables dictionaries.
+
+        - integrate: dictionary with variables to be integrated over time.  
+          The dictionary has shortname:scaling pairs, the scaling factor will
+          be multiplied to the result of np.trapz(shortname, time).  The 
+          resulting value will be stored under shortname_int.  If the shortname
+          is a sub_var, the integration will be done for every mother.
+          
+          Example: mothers = ['c1', c2'], sub_vars = {'Q':'Q_flow'}, 
+          integrate = {'Q':1e-6} will create c1_Q_int and c2_Q_int.
+          
         """
         #pdb.set_trace()
         pp_int = []
