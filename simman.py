@@ -2238,11 +2238,11 @@ class Process(object):
         - integrate: dictionary with variables to be integrated over time.  
           The dictionary has shortname:scaling pairs, the scaling factor will
           be multiplied to the result of np.trapz(shortname, time).  The 
-          resulting value will be stored under shortname_int.  If the shortname
+          resulting value will be stored under shortname_Int.  If the shortname
           is a sub_var, the integration will be done for every mother.
           
           Example: mothers = ['c1', c2'], sub_vars = {'Q':'Q_flow'}, 
-          integrate = {'Q':1e-6} will create c1_Q_int and c2_Q_int.
+          integrate = {'Q':1e-6} will create c1_Q_Int and c2_Q_Int.
           
         """
         #pdb.set_trace()
