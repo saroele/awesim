@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SimulationManagement's documentation!
-================================================
+Master your simulation workflow with simman
+===========================================
 
 Simulation management should be renamed to simman I think, and I should then have a separate file for Simdex, Simulation, Process and Result, all in the folder simman with an __init__.py in there. new test for sourcecode
 
