@@ -1,7 +1,8 @@
 Simulation Management
 =====================
 
-Optimize your simulation workflow. Simulation Management is written in **Python** and contains tools for pre- and post-processing of **Modelica** models.      
+*Optimize your simulation workflow.*  
+Simulation Management is written in **Python** and contains tools for pre- and post-processing of **Modelica** models.      
 
 With Simulation Management you can:
 
