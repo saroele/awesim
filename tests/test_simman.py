@@ -13,7 +13,7 @@ from os import getcwd, path, remove
 from cStringIO import StringIO
 import sys
 import matplotlib
-from simman import Simulation, Simdex, Result, Process, load_simdex
+from simman.simman import Simulation, Simdex, Result, Process, load_simdex
 
 
 class ProcessTest(unittest.TestCase):
@@ -393,6 +393,14 @@ class SimulationTest(unittest.TestCase):
         process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T'})
         result_pp = sim.postprocess(process)
         self.assertTrue(result_pp.has_key('c1_T'))
+        
+    def test_postprocess_nosubvars(self):
+        """Postprocessing with a process without sub-vars should not raise error"""
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(variables={'T': 'c1.T'}, pp=['T_degC = T - 273.15'])
+        result_pp = sim.postprocess(process)
+        self.assertTrue(result_pp.has_key('T_degC'))
         
     def test_postprocess_mothers(self):
         """Try a basic postprocessing with mothers on a simulation"""
