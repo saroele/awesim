@@ -14,3 +14,6 @@ buildlog.txt
 *.dat
 *.h5
 /outputfile.txt
+/doc/build
+/doc/Makefile
+/doc/make.bat
