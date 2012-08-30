@@ -13,7 +13,7 @@ from os import getcwd, path, remove
 from cStringIO import StringIO
 import sys
 import matplotlib
-from simman.simman import Simulation, Simdex, Result, Process, load_simdex
+from awesim import Simulation, Simdex, Result, Process, load_simdex
 
 
 class ProcessTest(unittest.TestCase):
@@ -172,41 +172,7 @@ class SimulationTest(unittest.TestCase):
                             'Simulation.__init__() dit not create \
                             attribute %s' % attr)
                             
-    def test___init__subfolder(self):
-        """
-        Tests creation of Simulation object from well known file with full
-        pathname.
-        Checks if attributes are present 
-        Make sure the file LinkedCapacities.mat is in the folder 'Subfolder' 
-        of the current work directory
 
-        """
-        cwd = getcwd()
-        filename = path.join(cwd, 'Subfolder', 'LinkedCapacities')
-        sim = Simulation(filename)
-        for attr in ['dataInfo', 'data_1', 'data_2', 'filename', 'names']:
-            self.assertTrue(sim.__dict__.has_key(attr), 
-                            'Simulation.__init__() dit not create \
-                            attribute %s' % attr)
-
-    def test___init__subfolder_with_spaces(self):
-        """
-        Tests creation of Simulation object from well known file with full
-        pathname including spaces.
-        Checks if attributes are present 
-        Make sure the file LinkedCapacities.mat is in the folder 
-        'Subfolder with spaces' of the current work directory
-
-        """
-        cwd = getcwd()
-        filename = path.join(cwd, 'A Subfolder with Spaces', 'LinkedCapacities')
-        sim = Simulation(filename)
-        for attr in ['dataInfo', 'data_1', 'data_2', 'filename', 'names']:
-            self.assertTrue(sim.__dict__.has_key(attr), 
-                            'Simulation.__init__() dit not create \
-                            attribute %s' % attr)
-
-                            
     def test___init__attributes_array(self):
         """
         Tests creation of Simulation object from well known file with arrays.

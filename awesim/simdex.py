@@ -70,6 +70,8 @@ import tables as tbl
 #from datetime import datetime, timedelta
 #import pandas
 import pdb
+from .simulation import Simulation
+from .result import Result
 
 
 class Simdex:
@@ -275,6 +277,8 @@ class Simdex:
           same start and stop times.  
         
         """
+        
+        #pdb.set_trace()
         
         if process is None:
             process = self.process
