@@ -42,7 +42,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'SimulationManagement'
+project = u'awesim'
 copyright = u'2012, Roel De Coninck, Ruben Baetens'
 
 # The version info for the project you're documenting, acts as replacement for
