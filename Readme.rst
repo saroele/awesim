@@ -1,10 +1,11 @@
-Simulation Management
-=====================
+awesim
+======
 
 *Optimize your simulation workflow.*  
-Simulation Management is written in **Python** and contains tools for pre- and post-processing of **Modelica** models.      
 
-With Simulation Management you can:
+awesim is written in **Python** and contains tools for pre- and post-processing of **Modelica** models.      
+
+With awesim you can:
 
     1. compile models, set parameters and solver options and start simulations 
     2. run simulations in parallel on the same computer or different machines
@@ -14,7 +15,7 @@ With Simulation Management you can:
       
 Most of the tools provided are currently based on Dymola and the .mat result file. 
 
-Simulation management is licensed under the xxx license.
+Simulation management is currently developed by 3E and KU Leuven (Belguim).  We are currently evaluating the license...
 
 See the documentation for more information.
 
