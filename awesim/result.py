@@ -18,6 +18,7 @@ from matplotlib.dates import date2num
 from datetime import datetime, timedelta
 import pandas
 import pdb
+import pickle
 
 
 class Result(object):
@@ -54,6 +55,25 @@ class Result(object):
         
         for k,v in kwargs.items():
             setattr(self, k, v)
+
+    def save(self, filename):
+        """
+        save(filename)
+        
+        Save the Simdex object by pickling it with cPickle
+        
+        To unpickle (= load) use the following command:
+            objectname = pickle.load(open(filename,'rb'))
+            # 'rb' stands for 'read, binary'
+            
+        """
+        
+        f = file(filename,'wb') 
+        # wb stands for 'write, binary'
+        pickle.dump(self, f)
+        f.close()
+        
+        return filename + ' created'
             
     def values(self):
         """
@@ -174,27 +194,24 @@ class Result(object):
             This function can be used in the post-processing too.
             """
             
-            def make_datetimeindex(array_in_seconds, year):
-                """
-                Create a pandas DateIndex from a time vector in seconds and the year.
-                """
-                
-                start = pandas.datetime(year, 1, 1)
-                datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
-                
-                return pandas.DatetimeIndex(datetimes)
+            ratio = interval/(time[1]-time[0])
             
-            interval_string = str(interval) + 'S'    
-            dr = make_datetimeindex(time, 2012)
-            df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
-            df5min = df.resample(interval_string, how=np.mean, closed=label, label=label)
+            time_index = np.arange(0, time[-1]+interval, interval)
             
-            return df5min       
+            data = np.zeros(len(time_index))
+            data[0] = signal[0]
+            for i in range(1,len(data)):
+                data[i]=np.mean(signal[(i-1)*ratio:i*ratio])
+                
+            return time_index, data       
     
-        result = {}        
+        value = {}
+        time = {}
         for sid in self.simulations:
-            result[sid] = smooth_by_time(self.val[sid], self.time[sid], interval=interval)
-            
+            value[sid], time[sid] = smooth_by_time(self.val[sid], self.time[sid], interval=interval)
+
+        result = Result(values=value, time=time)
+        
         return result
 
     def plot(self, ylabel=None):
