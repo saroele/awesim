@@ -321,9 +321,23 @@ def analyse_log(log_file):
             summary['successful'] = True
         elif line.find('CPU time for integration') > -1 or \
              line.find('CPU-time for integration') > -1:
-            summary['CPU_time'] = line.split(' ')[-2]
+            summary['cpu_time'] = line.split(' ')[-2]
         elif line.find('Number of (successful) steps') > -1:
-            summary['steps_ok'] = line.split(' ')[-1]
+            summary['successful_steps'] = line.split(' ')[-1]
+        elif line.find('Number of (model) time events') > -1:
+            summary['time_events_model'] = line.split(' ')[-1]
+        elif line.find('Number of (U) time events') > -1:
+            summary['time_events_U'] = line.split(' ')[-1]
+        elif line.find('Number of state    events') > -1:
+            summary['state_events'] = line.split(' ')[-1]
+        elif line.find('Number of step     events') > -1:
+            summary['step_events'] = line.split(' ')[-1]
+        elif line.find('Minimum integration stepsize') > -1:
+            summary['step_size_min'] = line.split(' ')[-1]
+        elif line.find('Maximum integration stepsize') > -1:
+            summary['step_size_max'] = line.split(' ')[-1]
+        elif line.find('Maximum integration order') > -1:
+            summary['int_order_max'] = line.split(' ')[-1]
         elif line.find('Number of rejected steps') > -1:
             summary['steps_nok'] = line.split(' ')[-1]
         elif line.find('Integration started at 0 using integration method:') > -1:
@@ -373,26 +387,51 @@ def run_ds(dymosim = '', dsin = '', result = ''):
     return proc    
     
 
-def create_input_file(data, filename):
+def create_input_file(data, filename, discrete=False):
     """
     Create an input file for the TimeTables from the MSL.
-    The input files are in ascii format
+    The input files are in ascii format.
     
-    data has to be an array with time as first column.  All columns of this array
-    will be written in the ascii file.
+    Parameters
+    ==========    
+    * data: array with time as first column.  All columns of this array
+      will be written in the ascii file.
+    * filename: filename (with extension).  If this file already exists, it 
+      will be overwritten
+    * discrete: if True, the data array will be modified to become a discrete
+      profile. At each timestep, an additional line will be created.  See
+      the documentation of the Modelica.Timetable.mo model for more info.
     """
+    
+    l,w = data.shape
+    
+    if discrete:
+        # create a second, shifted data array.  We'll write each row of this
+        # shifted array after each row of the original one.
+        data_shifted = data.copy()[:-1,:]
+        data_shifted[:,0] = data[1:,0]
+        shape_string = '(' + str(2*l-1) + ',' + str(w) + ')'
+    else:
+        shape_string = '(' + str(l) + ',' + str(w) + ')'
+        
+    
     
     f = open(filename, 'w')
     f.write(u'#1\n')
-    shape_string = str(data.shape)
     f.write(''.join([u'double data', shape_string,  
                      u'# Profiles created by python script: ', sys.argv[0], 
                     '\n']))
-    for i in range(data.shape[0]):
+    for i in range(data.shape[0] - 1):
         f.write('\t'.join([str(v) for v in data[i,:]]))
-        f.write('\n')
-    
+        f.write('\n')        
+        if discrete:
+            f.write('\t'.join([str(v) for v in data_shifted[i,:]]))
+            f.write('\n')
+            
+    f.write('\t'.join([str(v) for v in data[-1,:]]))
+    f.write('\n')
     f.close()
+
     
 
 
