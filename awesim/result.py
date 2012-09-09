@@ -230,7 +230,7 @@ class Result(object):
                 
                 ax.plot(self.val[sid], 'o-', label=label)            
                              
-        leg = ax.legend()
+        leg = ax.legend(loc='best')
         lines = ax.get_lines()
         if plot_type == 'plot_date':
             ax.set_xlabel('time')
