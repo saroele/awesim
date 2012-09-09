@@ -11,7 +11,9 @@ Created on Thu Feb 17 11:36:47 2011
 
 import numpy as np
 import os
-from simman import Simulation, Simdex, Process, load_simdex
+from awesim import Simulation, Simdex, Process, load_simdex
+
+path = os.path.join(os.path.split(os.getcwd())[0], 'tests')
 
 # first, test the package
 #runfile(r'C:\Workspace\Python\SimulationManagement\test_simman.py', 
@@ -19,7 +21,7 @@ from simman import Simulation, Simdex, Process, load_simdex
 
 # a Simulation is a python object for 1 simulation result file
 
-sim=Simulation('LinkedCapacities_A') #with our without .mat extension
+sim=Simulation(os.path.join(path, 'LinkedCapacities_A')) #with our without .mat extension
 sim.separate() # optional, makes attributes for parameters and variables
 
 sim.parameters
@@ -41,9 +43,9 @@ for p,v in zip(sim.parameters, sim.parametervalues):
 # there are different ways to create a simdex
 
 s1 = Simdex() # an empty simdex object
-s1.scan() # scan current folder and add all found simulation files to the simdex
+s1.scan(folder=path) # scan current folder and add all found simulation files to the simdex
 
-s2 = Simdex('SubfolderWithCrappyFiles')
+s2 = Simdex(os.path.join(path, 'SubfolderWithCrappyFiles'), h5='simdex2.h5')
     # create a simdex directly from a folder
     
 print s1
@@ -68,16 +70,18 @@ s1.h5.close()
 
 # Next step: using a process
 
-p1 = Process(variables={'T2':'c2.T', 'dt2':'c[2].der(T)'})
-s1 = Simdex(os.getcwd(), process=p1)
+p1 = Process(variables={'T1':'c1.T', 'T2':'c2.T', 'dt2':'c[2].der(T)'})
+s1 = Simdex(path, process=p1)
+
+s1.get('T1').values()
 
 
 mothers=['c1', 'c2']
 parameters={'cap1':'c1.C', 'res':'r.R'}
 sub_pars={'cap':'C'}
 variables={}
-sub_vars={'Qflow':'heatPort.Q_flow'}
-pp=['Qflow10 = 10 * Qflow']
+sub_vars={'T':'T', 'Qflow':'heatPort.Q_flow'}
+pp=['Qflow_kW = Qflow / 1000.']
 J2kWh = 1e-6/3.6
 vars_to_integrate = {'Qflow':J2kWh}
 
@@ -85,6 +89,7 @@ p = Process(mothers=mothers, parameters=parameters,
                     sub_pars=sub_pars, variables=variables, 
                     sub_vars=sub_vars, pp=pp, integrate=vars_to_integrate)
 
+s1 = Simdex(path, process=p)
 
 # remove a simulation from the simdex manually
 s3 = s1.filter_remove(['SID0000'])
@@ -114,8 +119,9 @@ fltr2 = {'newParameter' : ''}
 s4 = s1.filter(fltr2)
 
 # plotting
-s3.plot('c1.T')
-s3.scatterplot('c1.T', 'c2.T')
+print s1.vardic
+s3.plot('c1_T')
+s3.scatterplot('c1_T', 'c2_T')
 
 # saving a specific simdex
 s2 = s1.filter(fltr)
@@ -124,4 +130,4 @@ s2.save('simdex2')
 
 
 s = load_simdex('simdex2')
-s.plot('r.heatPort_b.Q_flow')
+s.plot('c1_T')
