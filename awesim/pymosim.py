@@ -9,9 +9,10 @@ import time, os, itertools, shutil
 from subprocess import Popen
 import subprocess
 import sys
-from simman import Simulation, Simdex
 from shutil import copyfile
 import copy
+import numpy as np
+
 
 def set_solver(solver, dsin = '', copy_to = None):
     """
@@ -387,7 +388,7 @@ def run_ds(dymosim = '', dsin = '', result = ''):
     return proc    
     
 
-def create_input_file(data, filename, discrete=False):
+def create_input_file(data, filename, discrete=False, compress=True):
     """
     Create an input file for the TimeTables from the MSL.
     The input files are in ascii format.
@@ -401,10 +402,22 @@ def create_input_file(data, filename, discrete=False):
     * discrete: if True, the data array will be modified to become a discrete
       profile. At each timestep, an additional line will be created.  See
       the documentation of the Modelica.Timetable.mo model for more info.
+    * compress: if True, all reduntant lines will be removed from data.
     """
     
-    l,w = data.shape
+    if compress:
+        # rows with only zeros are removed, UNLESS they come after a row
+        # containing any value. 
+        
+        row_contains_data = data[:,1:].any(axis=1)
+        row_contains_data_rolled = np.roll(row_contains_data, 1)
+        row_contains_data[0] = True
+        row_contains_data[-1] = True
+        keep = np.logical_or(row_contains_data, row_contains_data_rolled)
+        data = data[keep]
     
+    l,w = data.shape
+
     if discrete:
         # create a second, shifted data array.  We'll write each row of this
         # shifted array after each row of the original one.
