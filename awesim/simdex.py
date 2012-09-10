@@ -533,24 +533,24 @@ class Simdex:
             """
             
             
-            if var==variables[index]:
-                # var is the first element in variables, update varmap
-                varmap[index,-1] = 1
-                pos = index+1
-            else:
-                try:
-                    # search for it in variables, but only in the part AFTER index
+            
+            try:
+                if var==variables[index]:
+                    # var is the first element in variables, update varmap
+                    varmap[index,-1] = 1
+                    pos = index+1
+                else:# search for it in variables, but only in the part AFTER index
                     pos=variables[index:].index(var)+index
                     varmap[pos,-1] = 1
-                except(ValueError):
-                    # this variable was not found.  Add it in the right position
-                    # keeping the list in sorted order
-                    pos = bisect.bisect_left(variables, var, lo=index)
-                    variables.insert(pos,var)
-                    # make new row in variablemap and add '1' in the last column
-                    varmap = np.insert(varmap, pos, 0, axis=0)
-                    varmap[pos,-1] = 1
-                    pos+=1
+            except(ValueError, IndexError):
+                # this variable was not found.  Add it in the right position
+                # keeping the list in sorted order
+                pos = bisect.bisect_left(variables, var, lo=index)
+                variables.insert(pos,var)
+                # make new row in variablemap and add '1' in the last column
+                varmap = np.insert(varmap, pos, 0, axis=0)
+                varmap[pos,-1] = 1
+                pos+=1
             return variables, varmap, pos
                     
         # internal function to enhance readibility
@@ -565,28 +565,29 @@ class Simdex:
             Returns the new parameters, parmap, parvalues and index
             """
           
-            if par==parameters[index]:
-                # par is the first element in parameters, update parmap, parvalues
-                parmap[index,-1] = 1
-                parvalues[index, -1] = parvalue
-                pos = index+1
-            else:
-                try:
+            
+            try:
+                if par==parameters[index]:
+                    # par is the first element in parameters, update parmap, parvalues
+                    parmap[index,-1] = 1
+                    parvalues[index, -1] = parvalue
+                    pos = index+1
+                else:
                     # search for it in parameters, but only in the part AFTER index
                     pos=parameters[index:].index(par)+index
                     parmap[pos,-1] = 1
                     parvalues[pos, -1] = parvalue
-                except(ValueError):
-                    # this parameter was not found.  Add it in the right position
-                    # keeping the list in sorted order
-                    pos = bisect.bisect_left(parameters, par, lo=index)
-                    parameters.insert(pos,par)
-                    # make new row in parametermap and add '1' in the last column
-                    parmap = np.insert(parmap, pos, 0, axis=0)
-                    parmap[pos,-1] = 1
-                    parvalues = np.insert(parvalues, pos, 0, axis=0)
-                    parvalues[pos,-1] = parvalue
-                    pos+=1
+            except(ValueError, IndexError):
+                # this parameter was not found.  Add it in the right position
+                # keeping the list in sorted order
+                pos = bisect.bisect_left(parameters, par, lo=index)
+                parameters.insert(pos,par)
+                # make new row in parametermap and add '1' in the last column
+                parmap = np.insert(parmap, pos, 0, axis=0)
+                parmap[pos,-1] = 1
+                parvalues = np.insert(parvalues, pos, 0, axis=0)
+                parvalues[pos,-1] = parvalue
+                pos+=1
             return parameters, parmap, parvalues, pos
         
         

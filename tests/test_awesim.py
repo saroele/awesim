@@ -446,7 +446,7 @@ class SimdexTest(unittest.TestCase):
         # 
         # It doesn't matter if N exceeds the numer of questions
         # NOTE: this may affect interactive debugging tools
-        N = 1000
+        N = 100
         f = StringIO("y\n" * N)
         sys.stdin = f
         
@@ -494,6 +494,23 @@ class SimdexTest(unittest.TestCase):
         filenames.sort()
         self.assertEqual(self.sims, filenames)
         self.simdex.h5.close()
+        
+        
+    def test_init_different_order(self):
+        """
+        Tests if a Simdex object is created correctly when the files are 
+        in a different order, resulting in new variables to be added after all
+        previously indexed variables are found
+      
+        """
+        s2=Simdex()
+        sim1 = Simulation('LinkedCapacities.mat')
+        sim2 = Simulation('Array.mat')
+        s2.index_one_sim(sim1)
+        s2.index_one_sim(sim2)
+        
+        self.assertEqual(sorted(s2.get_filenames()), 
+                         sorted(['LinkedCapacities.mat', 'Array.mat']))
 
     def test_init_with_process(self):
         """
