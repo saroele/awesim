@@ -72,6 +72,7 @@ import tables as tbl
 import pdb
 from .simulation import Simulation
 from .result import Result
+from .pymosim import analyse_log
 
 
 class Simdex:
@@ -284,12 +285,15 @@ class Simdex:
             process = self.process
         
         if folder == '' :
-            filenames = self.__get_files(os.getcwd(), '.mat')
-        elif os.path.exists(folder):
+            folder = os.getcwd()
+        
+        try:
             filenames = self.__get_files(folder, '.mat')
-        else:
-            raise IOError('folder does not exist')
-            
+        except IOError:
+            raise IOError('folder %s does not exist' % (folder))
+        
+        if len(filenames) == 0:
+            raise ValueError("No .mat files found in %s" % (folder))
         
         # Convert to full path filenames to avoid confusion
         full_path_filenames = []
@@ -312,6 +316,8 @@ class Simdex:
                     # we find a first Dymola file
                     sim = Simulation(full_path_filenames[index])
                     simulation_file = True
+                except MemoryError:
+                    print 'WARNING: %s could not be indexed because of a MemoryError.\nThe file is probably too big.  It could help to try in a fresh python instance' % (full_path_filenames[index])
                 except:
                     print '%s is no Dymola file.  It is not indexed' % \
                         (full_path_filenames[index])
@@ -527,24 +533,24 @@ class Simdex:
             """
             
             
-            if var==variables[index]:
-                # var is the first element in variables, update varmap
-                varmap[index,-1] = 1
-                pos = index+1
-            else:
-                try:
-                    # search for it in variables, but only in the part AFTER index
+            
+            try:
+                if var==variables[index]:
+                    # var is the first element in variables, update varmap
+                    varmap[index,-1] = 1
+                    pos = index+1
+                else:# search for it in variables, but only in the part AFTER index
                     pos=variables[index:].index(var)+index
                     varmap[pos,-1] = 1
-                except(ValueError):
-                    # this variable was not found.  Add it in the right position
-                    # keeping the list in sorted order
-                    pos = bisect.bisect_left(variables, var, lo=index)
-                    variables.insert(pos,var)
-                    # make new row in variablemap and add '1' in the last column
-                    varmap = np.insert(varmap, pos, 0, axis=0)
-                    varmap[pos,-1] = 1
-                    pos+=1
+            except(ValueError, IndexError):
+                # this variable was not found.  Add it in the right position
+                # keeping the list in sorted order
+                pos = bisect.bisect_left(variables, var, lo=index)
+                variables.insert(pos,var)
+                # make new row in variablemap and add '1' in the last column
+                varmap = np.insert(varmap, pos, 0, axis=0)
+                varmap[pos,-1] = 1
+                pos+=1
             return variables, varmap, pos
                     
         # internal function to enhance readibility
@@ -559,74 +565,36 @@ class Simdex:
             Returns the new parameters, parmap, parvalues and index
             """
           
-            if par==parameters[index]:
-                # par is the first element in parameters, update parmap, parvalues
-                parmap[index,-1] = 1
-                parvalues[index, -1] = parvalue
-                pos = index+1
-            else:
-                try:
+            
+            try:
+                if par==parameters[index]:
+                    # par is the first element in parameters, update parmap, parvalues
+                    parmap[index,-1] = 1
+                    parvalues[index, -1] = parvalue
+                    pos = index+1
+                else:
                     # search for it in parameters, but only in the part AFTER index
                     pos=parameters[index:].index(par)+index
                     parmap[pos,-1] = 1
                     parvalues[pos, -1] = parvalue
-                except(ValueError):
-                    # this parameter was not found.  Add it in the right position
-                    # keeping the list in sorted order
-                    pos = bisect.bisect_left(parameters, par, lo=index)
-                    parameters.insert(pos,par)
-                    # make new row in parametermap and add '1' in the last column
-                    parmap = np.insert(parmap, pos, 0, axis=0)
-                    parmap[pos,-1] = 1
-                    parvalues = np.insert(parvalues, pos, 0, axis=0)
-                    parvalues[pos,-1] = parvalue
-                    pos+=1
+            except(ValueError, IndexError):
+                # this parameter was not found.  Add it in the right position
+                # keeping the list in sorted order
+                pos = bisect.bisect_left(parameters, par, lo=index)
+                parameters.insert(pos,par)
+                # make new row in parametermap and add '1' in the last column
+                parmap = np.insert(parmap, pos, 0, axis=0)
+                parmap[pos,-1] = 1
+                parvalues = np.insert(parvalues, pos, 0, axis=0)
+                parvalues[pos,-1] = parvalue
+                pos+=1
             return parameters, parmap, parvalues, pos
         
         
         def add_meta(simulation, key):
             """Create a node for the simulation and add data to /Metadata"""
             
-            def analyse_log(log_file):
-                """
-                analyse_log(log_file)
-                log_file = string with path to a dslog.txt file
-                
-                Check if the simulation ended successfully, which solver was used and
-                how much time it took.  Optionally, show the number of this and that
-                Returns a dictionary with the results
-                
-                """
-                
-                summary = {'successful':False}
-                lf = open(log_file, 'r')
-                lines = lf.readlines()    
-                for line_number, line in enumerate(lines):
-                    if line.find('Integration terminated successfully at T =') > -1:
-                        summary['successful'] = True
-                    elif line.find('CPU time for integration') > -1 or \
-                         line.find('CPU-time for integration') > -1:
-                        summary['CPU_time'] = line.split(' ')[-2]
-                    elif line.find('Number of (successful) steps') > -1:
-                        summary['steps_ok'] = line.split(' ')[-1]
-                    elif line.find('Number of rejected steps') > -1:
-                        summary['steps_nok'] = line.split(' ')[-1]
-                    elif line.find('Integration started at 0 using integration method:') > -1:
-                        summary['algorithm'] = lines[line_number + 1].strip('\n')
-                    elif line.find('Integration started at T = 0 using integration method') > -1:
-                        summary['algorithm'] = line.split(' ')[-1].strip('\n')
-                    elif line.find('This simulation timed out and was killed') > -1:
-                        summary['successful'] = False
-                        summary['timed_out'] = True
-                    elif line.find('Corresponding result file') > -1:
-                        summary['result file'] = line.split(' ')[-1].strip('\n')
-                lf.close()
-                if summary.has_key('steps_nok'):    
-                    summary['perc_wrong'] = 100. * float(summary['steps_nok']) / \
-                                            float(summary['steps_ok'])
-                else:
-                    summary['perc_wrong'] = 0
-                return summary            
+         
             
             class Meta(tbl.IsDescription):
                 SID = tbl.StringCol(itemsize=16)
@@ -634,11 +602,20 @@ class Simdex:
                 log_analysed = tbl.BoolCol()
                 successful = tbl.BoolCol()
                 algorithm = tbl.StringCol(itemsize=16)
-                CPU_time = tbl.Float32Col()
-                steps_ok = tbl.Int32Col()
+                cpu_time = tbl.Float32Col()
+                successful_steps = tbl.Int32Col()
                 steps_nok = tbl.Int32Col()
                 timed_out = tbl.BoolCol()
                 perc_wrong = tbl.Float32Col()
+                time_events_model = tbl.Int32Col()
+                time_events_U = tbl.Int32Col()
+                state_events = tbl.Int32Col()
+                step_events = tbl.Int32Col()
+                step_size_min = tbl.Float32Col()
+                step_size_max = tbl.Float32Col()
+                int_order_max = tbl.Int32Col()
+                
+                
                 
             self.openh5()
             
