@@ -7,6 +7,7 @@ Created on Thu Jan 06 20:46:26 2011
 @author: RDC
 """
 
+import pdb
 import numpy as np
 import unittest
 from os import getcwd, path, remove
@@ -333,8 +334,13 @@ class SimulationTest(unittest.TestCase):
         self.assertEqual(variables, sim.variables)
         
     def test_extract(self):
-        """to be implemented"""
-        pass
+        """check if extract() gives the same arrays as get_value()"""
+        
+        sim = Simulation('LinkedCapacities')
+        sim.separate()
+        extracted = sim.extract({v:v for v in sim.variables})
+        for k,v in extracted.items():
+            np.testing.assert_equal(v, sim.get_value(k))
 
     def test_get_objects(self):
         """Test if get_objects works with empty mother model"""
@@ -433,6 +439,23 @@ class SimulationTest(unittest.TestCase):
         self.assertIsNotNone(result_pp['Time_Int'])     
         
 
+    def test_analyse_cputime_raises(self):
+        """check if the analysis of cpu-time raises an error when there is no CPUtime"""
+        
+        sim = Simulation('LinkedCapacities')
+        sim.separate()
+        extracted = sim.extract({v:v for v in sim.variables})
+        self.assertRaises(ValueError, sim.analyse_cputime, extracted) 
+        
+    def test_analyse_cputime(self):
+        """check if the analysis of cpu-time raises an error when there is no CPUtime"""
+        
+        #pdb.set_trace()        
+        sim = Simulation('./TestSet2/reswithCPUtime')
+        sim.separate()
+        extracted = sim.extract({v:v for v in sim.variables})
+        corr = sim.analyse_cputime(interval=1000)
+        self.assertListEqual(sorted(extracted.keys()), sorted(corr.keys()))
         
 class SimdexTest(unittest.TestCase):
     """
@@ -446,7 +469,7 @@ class SimdexTest(unittest.TestCase):
         # 
         # It doesn't matter if N exceeds the numer of questions
         # NOTE: this may affect interactive debugging tools
-        N = 1000
+        N = 100
         f = StringIO("y\n" * N)
         sys.stdin = f
         
@@ -494,6 +517,23 @@ class SimdexTest(unittest.TestCase):
         filenames.sort()
         self.assertEqual(self.sims, filenames)
         self.simdex.h5.close()
+        
+        
+    def test_init_different_order(self):
+        """
+        Tests if a Simdex object is created correctly when the files are 
+        in a different order, resulting in new variables to be added after all
+        previously indexed variables are found
+      
+        """
+        s2=Simdex()
+        sim1 = Simulation('LinkedCapacities.mat')
+        sim2 = Simulation('Array.mat')
+        s2.index_one_sim(sim1)
+        s2.index_one_sim(sim2)
+        
+        self.assertEqual(sorted(s2.get_filenames()), 
+                         sorted(['LinkedCapacities.mat', 'Array.mat']))
 
     def test_init_with_process(self):
         """
