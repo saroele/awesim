@@ -196,19 +196,19 @@ class Result(object):
             
             ratio = interval/(time[1]-time[0])
             
-            time_index = np.arange(0, time[-1]+interval, interval)
+            time = np.arange(0, time[-1]+interval, interval)
             
-            data = np.zeros(len(time_index))
+            data = np.zeros(len(time))
             data[0] = signal[0]
             for i in range(1,len(data)):
-                data[i]=np.mean(signal[(i-1)*ratio:i*ratio])
+                data[i]=np.mean(signal[((i-1)*ratio):(i*ratio)])
                 
-            return time_index, data       
+            return data, time       
     
         value = {}
         time = {}
         for sid in self.simulations:
-            value[sid], time[sid] = smooth_by_time(self.val[sid], self.time[sid], interval=interval)
+            value[sid], time[sid] = smooth_by_time(signal=self.val[sid], time=self.time[sid], interval=interval)
 
         result = Result(values=value, time=time)
         
