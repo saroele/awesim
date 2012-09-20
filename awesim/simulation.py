@@ -28,6 +28,7 @@ import numpy as np
 from scipy.integrate import cumtrapz
 import os
 import scipy.io
+from scipy.stats import spearmanr
 import re
 import copy
 #import matplotlib.pyplot as plt
@@ -631,7 +632,7 @@ class Simulation:
             
             var_diff = np.diff(var_smpl)
             
-            res[varname] = np.min(np.corrcoef(var_diff, cpu_diff))
+            res[varname] = spearmanr(var_diff, cpu_diff)[0]
             
         good_results = {k:v for k,v in res.items() if not np.isnan(v)}
             
