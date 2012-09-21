@@ -193,7 +193,7 @@ class Result(object):
                     
             This function can be used in the post-processing too.
             """
-            
+            #pdb.set_trace()
             ratio = interval/(time[1]-time[0])
             
             time = np.arange(0, time[-1]+interval, interval)
