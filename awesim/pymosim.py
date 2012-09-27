@@ -60,31 +60,70 @@ def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
     """
     pass
 
-def set_par(parameter, value, dsin='', copy_to = None):
+def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     """
     Change a parametervalue in an existing dsin.txt
+    
+    Parameters
+    ----------
+    
+    parameter: string with parameter name
+    value: value to put for this parameter
+    dsin: filename of the dsin.txt. 
+    copy_to = filename of the resulting file, defaults to dsin
+    
+    
     """
 
-    if dsin == '':
-        dsin = 'dsin.txt'
-
     parameter_dsin = '# ' + str(parameter)
-    dsin_file = open(dsin, 'r+')
-    for s in dsin_file:
+    orig_file = open(dsin, 'r')
+    lines = orig_file.readlines() # list of strings, each ending with '\n'
+    orig_file.close()
+    
+    for linenumber, s in enumerate(lines):
         if s.find(parameter_dsin) > -1:
-            print 'The parameter', parameter, 'is found in', dsin
-            splitted = s.split()
+            # first we check that the parameter is not an auxiliary
+            # parameter (5th value of the 'array line' should be a 1)
+            splitted = s.split()            
             try:
-                s = s.replace(splitted[1], value)
-                print 'and is replaced by', value, '.'
-            except TypeError:
-                s = s.replace(splitted[1], str(value))
-                print '\t ==> and is replaced by', value, '.'
+                if not splitted[-4] == '1':
+                    raise ValueError("The parameter %s is of type 'auxiliary'.\n\
+                    it cannot be set in the dymosim input file. " % (parameter))# check if the value to write is in this line, or the previous one
+            except:
+                print "The parameter %s is of type 'auxiliary'.\n\It cannot be set in the dymosim input file. " % (parameter)
+                raise
+                    
+            # check structure of the file
+            if len(splitted) != 8:
+                # for some reason, the line is splitted.  We have to change the 
+                # second value of the previous line
+                prev_splitted = lines[linenumber-1].split()              
+                old_value = copy.copy(prev_splitted[1])
+                prev_splitted[1] = str(value)
+                prev_splitted.append('\n')
+                lines[linenumber-1] = ' '.join(prev_splitted)
+            else:
+                # all is nicely in one line
+                old_value = copy.copy(splitted[1])
+                splitted[1] = str(value)
+                splitted.append('\n')  
+                lines[linenumber] = ' '.join(splitted)
+            # we don't need to search the rest of the file
+            break            
+
+        
+    # Write the file
     
-    dsin_file.close()
+    if copy_to is None:
+        copy_to = dsin
     
-    if copy_to != None:
-        copyfile(dsin, copy_to)
+    writefile = file(copy_to, 'w')
+    writefile.writelines(lines)
+    writefile.close()
+    
+    print '%s found in %s: %s is replaced by %g' \
+           % (parameter, dsin, old_value, value)
+    
 
 def start_parametric_run(path):
     
