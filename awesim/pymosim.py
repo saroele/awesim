@@ -216,7 +216,7 @@ def set_sensitivity_run(path, dickie, deviation = 0.1):
         
     return path_list
 
-def cleanup_parrun(workdir, subdir=None):
+def cleanup_parrun(workdir, targetdir=None, subdir=None):
     """
     Clean a folder with simulations as created by a parametric run.  
     
@@ -224,6 +224,7 @@ def cleanup_parrun(workdir, subdir=None):
     ----------
     
     workdir = the main map where all subsets are located in
+    targetdir = path to the folder that will contain all resulting files    
     subdir = a list of paths to all subsets.  If not provided, all subdirs
     containing 'run_' are treated.
     
@@ -235,8 +236,10 @@ def cleanup_parrun(workdir, subdir=None):
     """
 
     #pdb.set_trace()
-    result_path = os.path.join(workdir, 'results_pr')
-    os.makedirs(result_path)
+    if targetdir is None:
+        targetdir = os.path.join(workdir, 'results_pr')
+        
+    os.makedirs(targetdir)
     files_copied = np.array([False, False, False])    
     
     if subdir is None:
@@ -250,7 +253,7 @@ def cleanup_parrun(workdir, subdir=None):
         # find and copy the .mat file        
         resultfile_oldpath = os.path.join(folder, 'dsres.mat')
         if os.path.exists(resultfile_oldpath):
-            resultfile_newpath = os.path.join(result_path, run_id + '.mat')
+            resultfile_newpath = os.path.join(targetdir, run_id + '.mat')
             shutil.move(resultfile_oldpath, resultfile_newpath)
             files_copied[0] = True
         else:
@@ -259,7 +262,7 @@ def cleanup_parrun(workdir, subdir=None):
         # find and copy the log file
         logfile_oldpath = os.path.join(folder, 'dslog.txt')
         if os.path.exists(logfile_oldpath):
-            logfile_newpath = os.path.join(result_path, run_id + '.txt')
+            logfile_newpath = os.path.join(targetdir, run_id + '.txt')
             shutil.move(logfile_oldpath, logfile_newpath)
             files_copied[1] = True
         else:
@@ -268,7 +271,7 @@ def cleanup_parrun(workdir, subdir=None):
         # find and copy the dsin.txt file
         dsinfile_oldpath = os.path.join(folder, 'dsin.txt')
         if os.path.exists(dsinfile_oldpath):
-            dsinfile_newpath = os.path.join(result_path, 'dsin_' + run_id + '.txt')
+            dsinfile_newpath = os.path.join(targetdir, 'dsin_' + run_id + '.txt')
             shutil.move(dsinfile_oldpath, dsinfile_newpath)
             files_copied[2] = True
         else:
