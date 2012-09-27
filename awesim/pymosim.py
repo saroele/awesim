@@ -216,7 +216,7 @@ def set_sensitivity_run(path, dickie, deviation = 0.1):
         
     return path_list
 
-def cleanup_parrun(workdir, targetdir=None, subdir=None):
+def cleanup_parrun(workdir, targetdir=None, subdir=None, remove=False):
     """
     Clean a folder with simulations as created by a parametric run.  
     
@@ -227,6 +227,7 @@ def cleanup_parrun(workdir, targetdir=None, subdir=None):
     targetdir = path to the folder that will contain all resulting files    
     subdir = a list of paths to all subsets.  If not provided, all subdirs
     containing 'run_' are treated.
+    remove: boolean, if True, the subdirs are all removed.
     
     Result
     ------
@@ -278,7 +279,7 @@ def cleanup_parrun(workdir, targetdir=None, subdir=None):
             print dsinfile_oldpath, ' not found.'
 
         # remove the folder with al content
-        if np.all(files_copied):        
+        if np.all(files_copied) and remove:        
             shutil.rmtree(folder)
 
          
