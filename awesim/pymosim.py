@@ -9,9 +9,10 @@ import time, os, itertools, shutil
 from subprocess import Popen
 import subprocess
 import sys
-from shutil import copyfile
+import shutil
 import copy
 import numpy as np
+import pdb
 
 
 def set_solver(solver, dsin = '', copy_to = None):
@@ -52,7 +53,7 @@ def set_solver(solver, dsin = '', copy_to = None):
     
     # only if original dsin had to be replaced
     if copy_to != None:    
-        copyfile('dsin_temp.txt', copy_to)
+        shutil.copyfile('dsin_temp.txt', copy_to)
     
 def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
     """
@@ -215,47 +216,69 @@ def set_sensitivity_run(path, dickie, deviation = 0.1):
         
     return path_list
 
-def close_parametric_run(workdir, subdir):
+def cleanup_parrun(workdir, subdir=None):
     """
-    This function finishes a parametric run by reordening all subsets
+    Clean a folder with simulations as created by a parametric run.  
+    
+    Parameters
+    ----------
     
     workdir = the main map where all subsets are located in
-    subdir = a list of paths to all subsets
+    subdir = a list of paths to all subsets.  If not provided, all subdirs
+    containing 'run_' are treated.
+    
+    Result
+    ------
+    The .mat files, log files and dsin files are put in a folder results_pr
+    and all subset folders (run_x) are removed.
+    
     """
 
-    result_path = workdir + '\\results_pr'
+    #pdb.set_trace()
+    result_path = os.path.join(workdir, 'results_pr')
     os.makedirs(result_path)
-
+    files_copied = np.array([False, False, False])    
+    
+    if subdir is None:
+        subdir_short = [f for f in os.listdir(workdir) if f.find('run_')>-1]
+        subdir = [os.path.join(workdir, p) for p in subdir_short]
+        
     for folder in subdir:
-        run_id = folder.split('\\')[-1]
-        resultfile_oldpath = folder + '\\dsres.mat'
-        resultfile_newpath = result_path + '\\result_' + run_id + '.mat'
-        existing = os.access(resultfile_oldpath, os.F_OK)        
-        if  existing:
-            copyfile(resultfile_oldpath,resultfile_newpath)
-        else:
-            print run_id + ' failed to simulate.'
+        print 'Processing ', folder
+        run_id = os.path.split(folder)[-1]
 
-        logfile_oldpath = folder + '\\dslog.txt'
-        logfile_newpath = result_path + '\\dslog_' + run_id + '.txt'
-        existing = os.access(logfile_oldpath, os.F_OK)        
-        if  existing:
-            copyfile(logfile_oldpath, logfile_newpath)
+        # find and copy the .mat file        
+        resultfile_oldpath = os.path.join(folder, 'dsres.mat')
+        if os.path.exists(resultfile_oldpath):
+            resultfile_newpath = os.path.join(result_path, run_id + '.mat')
+            shutil.move(resultfile_oldpath, resultfile_newpath)
+            files_copied[0] = True
         else:
-            print run_id + ' did not even start ??!!'
+            print resultfile_oldpath, ' not found.'
             
-        dsinfile_oldpath = folder + '\\dsin.txt'
-        dsinfile_newpath = result_path + '\\dsin_' + run_id + '.txt'
-        existing = os.access(dsinfile_oldpath, os.F_OK)        
-        if  existing:
-            copyfile(dsinfile_oldpath, dsinfile_newpath)
+        # find and copy the log file
+        logfile_oldpath = os.path.join(folder, 'dslog.txt')
+        if os.path.exists(logfile_oldpath):
+            logfile_newpath = os.path.join(result_path, run_id + '.txt')
+            shutil.move(logfile_oldpath, logfile_newpath)
+            files_copied[1] = True
         else:
-            print run_id + ' did not even get a dsin.txt ??!!'            
+            print logfile_oldpath, ' not found.'
+            
+        # find and copy the dsin.txt file
+        dsinfile_oldpath = os.path.join(folder, 'dsin.txt')
+        if os.path.exists(dsinfile_oldpath):
+            dsinfile_newpath = os.path.join(result_path, 'dsin_' + run_id + '.txt')
+            shutil.move(dsinfile_oldpath, dsinfile_newpath)
+            files_copied[2] = True
+        else:
+            print dsinfile_oldpath, ' not found.'
 
-    for i in range(len(subdir)):
-        existing = os.access(subdir[i], os.R_OK)        
-        if  existing:
-            shutil.rmtree(subdir[i])
+        # remove the folder with al content
+        if np.all(files_copied):        
+            shutil.rmtree(folder)
+
+         
 
 def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim = ''):
     """
@@ -305,8 +328,8 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
         dsin_file = os.getcwd() + '\\run_' + str(copy_to) + '\\dsin.txt'
         dymosim_file = os.getcwd() + '\\run_' + str(copy_to) + '\\dymosim.exe'
         os.makedirs(dsin_to)
-        copyfile('dsin_temp.txt', dsin_file)
-        copyfile(dymosim, dymosim_file)
+        shutil.copyfile('dsin_temp.txt', dsin_file)
+        shutil.copyfile(dymosim, dymosim_file)
 
 
     return dsin_to
