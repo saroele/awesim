@@ -25,8 +25,10 @@ class Simulation:
 """
 
 import numpy as np
+from scipy.integrate import cumtrapz
 import os
 import scipy.io
+from scipy.stats import spearmanr
 import re
 import copy
 #import matplotlib.pyplot as plt
@@ -563,3 +565,91 @@ class Simulation:
         
         result.pop('aggregate_by_time') 
         return result
+        
+    def analyse_cputime(self, variables=None, interval=900, screendump=30):
+        """Analyse the relation between cputime and some variables.
+    
+        It is required that the time array of the simulation contains an 
+        entry for every multiple of the interval.
+    
+        Parameters:
+        -----------
+        * variables: dictionary with name/array for which the correlation 
+          is to be found.  If the variablename ends with Int (case sensitive)
+          it is supposed to be cumulative
+          if variables = None, all variables found in the simulation are tested.
+        * interval: the desired interval for resampling, integer in seconds
+        * screendump: integer, number of lines to print.  A negative number
+          prints all the results
+        
+    
+        Output:
+        -------
+        dictionary with same keys as variables, and the correlation as values
+        """
+        
+        res = {}        
+        
+        #pdb.set_trace()
+        time = self.get_value('Time')
+        try:
+            cputime = self.get_value('CPUtime')
+        except(ValueError):
+            raise ValueError("This simulation has no trajectory for CPUtime")
+        
+        x = np.arange(time[0], time[-1], interval)
+        index = np.searchsorted(time, x)
+        try:
+            cpu_smpl = cputime[index]
+        except(IndexError):
+            print "====================== ERROR ====================="
+            print "This IndexError can be caused by a wrong interval."
+            print "Your interval setting was %s seconds" % (interval)
+            print "Make sure the simulation has this output interval"
+            raise
+            
+        cpu_diff = np.diff(cpu_smpl)
+        
+        if variables is None:
+            self.separate()
+            variables = self.extract({v:v for v in self.variables})
+        
+        for varname, array in variables.items():        
+            if varname.endswith('Int') or varname == 'CPUtime':
+                # we suppose the array is cumulative
+                var_cum = array
+            else:
+                var_cum = cumtrapz(array, time)
+                
+            try:
+                var_smpl = var_cum[index]
+            except(IndexError):
+                print "====================== ERROR ====================="
+                print "This IndexError can be caused by a wrong interval."
+                print "Your interval setting was %s seconds." % (interval)
+                print "Make sure the simulation has this output interval."
+                raise
+            
+            var_diff = np.diff(var_smpl)
+            
+            res[varname] = spearmanr(var_diff, cpu_diff)[0]
+            
+        good_results = {k:v for k,v in res.items() if not np.isnan(v)}
+            
+        keys_sorted = sorted(good_results.items(), key=lambda x: np.abs(x[1]), reverse=True)
+        if screendump < 0:
+            nlines = len(keys_sorted)
+        else:
+            nlines = screendump
+        
+        if nlines > 0:
+            print 'The highest correlations were found for :'
+            for k,v in keys_sorted[:nlines]:
+                print '\t', k, '.'*(50-len(k)), ' ==> ', '%.2f' % (v)
+            
+            #print 'The lowest correlations were found for :'
+            #for k,v in keys_sorted[:10]:
+            #    print '\t', k, ' '*(40-len(k)), ' ==> ', '%.2f' % (v)
+ 
+
+        return res
