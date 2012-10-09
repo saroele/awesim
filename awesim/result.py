@@ -24,7 +24,7 @@ import pickle
 class Result(object):
     """
     Class containing the result for one single variable but for different 
-    simualations.  An instance from this class is returned from Simdex.get()
+    simulations.  An instance from this class is returned from Simdex.get()
     
     This class also contains the plot functionality and methods to apply 
     basic operations and functions to it. 
@@ -176,22 +176,24 @@ class Result(object):
         return result
 
     def smooth(self, interval=300):
+        """
+        Calculate the running average of a timeseries
+        
+        Parameters
+        ----------
+        interval: interval for the running average, in seconds (default = 300s)
+        
+        Returns
+        -------
+        
+        returns a result object with smoothened values and adapted time
+        """
         
         def smooth_by_time(signal, time, interval=300, label='left'):
             """
             Function to calculate the running average of a timeseries 
-            in bins of interval seconds (default = 900s).
+            in bins of interval seconds (default = 300s).
             
-            label = 'left' or 'right'.  'Left' means that the label i contains data from 
-            i till i+1, 'right' means that label i contains data from i-1 till i.    
-            
-            Returns an array with interval values, one for each interval
-            of the period. 
-            
-            A few limitations of the method:
-                - the interval has to be a multiple of the time interval
-                    
-            This function can be used in the post-processing too.
             """
             #pdb.set_trace()
             ratio = interval/(time[1]-time[0])
