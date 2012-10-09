@@ -2095,6 +2095,48 @@ class Result(object):
             
         return result
 
+    def smooth(self, interval=300):
+        
+        def smooth_by_time(signal, time, interval=300, label='left'):
+            """
+            Function to calculate the running average of a timeseries 
+            in bins of interval seconds (default = 900s).
+            
+            label = 'left' or 'right'.  'Left' means that the label i contains data from 
+            i till i+1, 'right' means that label i contains data from i-1 till i.    
+            
+            Returns an array with interval values, one for each interval
+            of the period. 
+            
+            A few limitations of the method:
+                - the interval has to be a multiple of the time interval
+                    
+            This function can be used in the post-processing too.
+            """
+            
+            def make_datetimeindex(array_in_seconds, year):
+                """
+                Create a pandas DateIndex from a time vector in seconds and the year.
+                """
+                
+                start = pandas.datetime(year, 1, 1)
+                datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
+                
+                return pandas.DatetimeIndex(datetimes)
+            
+            interval_string = str(interval) + 'S'    
+            dr = make_datetimeindex(time, 2012)
+            df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
+            df5min = df.resample(interval_string, how=np.mean, closed=label, label=label)
+            
+            return df5min       
+    
+        result = {}        
+        for sid in self.simulations:
+            result[sid] = smooth_by_time(self.val[sid], self.time[sid], interval=interval)
+            
+        return result
+
     def plot(self, ylabel=None):
         """
         Creates a matplotlib figure with a simple plot of the timeseries for 
