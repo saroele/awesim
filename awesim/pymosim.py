@@ -122,7 +122,7 @@ def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     writefile.writelines(lines)
     writefile.close()
     
-    print '%s found in %s: %s is replaced by %g' \
+    print '%s found in %s: %s is replaced by %s' \
            % (parameter, dsin, old_value, value)
     
 
