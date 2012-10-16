@@ -401,6 +401,8 @@ class Simdex:
                 
                 index += 1            
         
+     
+
         self.h5.close()
                 
 
@@ -662,7 +664,6 @@ class Simdex:
             that has been added to the h5.
             
 
-            Still to add: extraction of metadata from the log
             """
             
             #pdb.set_trace()
@@ -691,6 +692,7 @@ class Simdex:
                         except(KeyError):
                             longname = shortname
                         vardic[shortname] = longname
+            
                 
             self.h5.flush()
             return vardic
@@ -771,6 +773,10 @@ class Simdex:
 
             # this method can be called on itself: close the h5 file afterwards
             self.h5.close()
+ 
+        # during the index_one_sim calls, the process is modified. It has to be
+        # linked to the simdex.
+        self.process = process
             
     def filter_similar(self, SID):
         '''
@@ -1308,7 +1314,7 @@ class Simdex:
         # reference to it via the h5_path string
         
         del self.h5
-        print 'self.h5 removed'
+        #print 'self.h5 removed'
 
         f = file(filename,'wb')
         # wb stands for 'write, binary'
