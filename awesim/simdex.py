@@ -224,7 +224,10 @@ class Simdex:
 
     def openh5(self):
         """Open the h5 file in append mode"""
-        if not self.h5.isopen:
+        try:
+            if not self.h5.isopen:
+                self.h5 = tbl.openFile(self.h5_path, 'a')
+        except AttributeError:
             self.h5 = tbl.openFile(self.h5_path, 'a')
         
     
@@ -1311,7 +1314,8 @@ class Simdex:
         """
         
         # the h5 file raises errors, so let's remove it.  Anyway, we keep the 
-        # reference to it via the h5_path string
+        # reference to it via the h5_path string, and we recreate it after 
+        # saving
         
         del self.h5
         #print 'self.h5 removed'
@@ -1320,6 +1324,9 @@ class Simdex:
         # wb stands for 'write, binary'
         pickle.dump(self, f)
         f.close()
+        
+        self.h5 = tbl.openFile(self.h5_path, 'a')
+        self.h5.close()
         
         return filename + ' created'
         
