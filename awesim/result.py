@@ -18,12 +18,13 @@ from matplotlib.dates import date2num
 from datetime import datetime, timedelta
 import pandas
 import pdb
+import pickle
 
 
 class Result(object):
     """
     Class containing the result for one single variable but for different 
-    simualations.  An instance from this class is returned from Simdex.get()
+    simulations.  An instance from this class is returned from Simdex.get()
     
     This class also contains the plot functionality and methods to apply 
     basic operations and functions to it. 
@@ -54,6 +55,25 @@ class Result(object):
         
         for k,v in kwargs.items():
             setattr(self, k, v)
+
+    def save(self, filename):
+        """
+        save(filename)
+        
+        Save the Simdex object by pickling it with cPickle
+        
+        To unpickle (= load) use the following command:
+            objectname = pickle.load(open(filename,'rb'))
+            # 'rb' stands for 'read, binary'
+            
+        """
+        
+        f = file(filename,'wb') 
+        # wb stands for 'write, binary'
+        pickle.dump(self, f)
+        f.close()
+        
+        return filename + ' created'
             
     def values(self):
         """
@@ -153,6 +173,47 @@ class Result(object):
             result[sid] = aggregate_by_time(self.val[sid], self.time[sid], 
                                             period=period, interval=interval)
             
+        return result
+
+    def smooth(self, interval=300):
+        """
+        Calculate the running average of a timeseries
+        
+        Parameters
+        ----------
+        interval: interval for the running average, in seconds (default = 300s)
+        
+        Returns
+        -------
+        
+        returns a result object with smoothened values and adapted time
+        """
+        
+        def smooth_by_time(signal, time, interval=300, label='left'):
+            """
+            Function to calculate the running average of a timeseries 
+            in bins of interval seconds (default = 300s).
+            
+            """
+            #pdb.set_trace()
+            ratio = interval/(time[1]-time[0])
+            
+            time = np.arange(0, time[-1]+interval, interval)
+            
+            data = np.zeros(len(time))
+            data[0] = signal[0]
+            for i in range(1,len(data)):
+                data[i]=np.mean(signal[((i-1)*ratio):(i*ratio)])
+                
+            return data, time       
+    
+        value = {}
+        time = {}
+        for sid in self.simulations:
+            value[sid], time[sid] = smooth_by_time(signal=self.val[sid], time=self.time[sid], interval=interval)
+
+        result = Result(values=value, time=time)
+        
         return result
 
     def plot(self, ylabel=None):

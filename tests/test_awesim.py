@@ -573,10 +573,67 @@ class SimdexTest(unittest.TestCase):
         self.assertEqual(self.sims, filenames)
         for v in ['c1_Thigh', 'c2_Q', 'c2_Q_Int']:
             self.assertTrue(self.simdex.vardic.has_key(v))
+            
+        self.assertTrue(self.simdex.process.sub_vars.has_key('Q_Int'))
         
 
         self.simdex.h5.close()
 
+
+    def test_scan_with_process_pp(self):
+        """Tests if simdex.process is updated correctly when using scan"""
+        
+        J2kWh = 1e-6/3.6
+        vars_to_integrate = {'Q':J2kWh, 'Time':1}        
+        process = Process(mothers=['c1', 'c2'], 
+                          sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                'Thigh = np.nonzero( T_degC > 640)[0]',
+                                'Qsel = Q [ Thigh ]'],
+                          integrate = vars_to_integrate)
+        
+        self.simdex=Simdex()
+        self.simdex.scan(folder = getcwd(), process=process)        
+        
+        filenames = self.simdex.get_filenames('path')
+        filenames.sort()
+        self.assertEqual(self.sims, filenames)
+        for v in ['c1_Thigh', 'c2_Q', 'c2_Q_Int']:
+            self.assertTrue(self.simdex.vardic.has_key(v))
+            
+        self.assertTrue(self.simdex.process.sub_vars.has_key('Q_Int'))
+        
+
+        self.simdex.h5.close()
+
+    def test_index_one_sim_with_process_pp(self):
+        """Tests if simdex.process is updated correctly when using index_one_sim"""
+        
+        J2kWh = 1e-6/3.6
+        vars_to_integrate = {'Q':J2kWh, 'Time':1}        
+        process = Process(mothers=['c1', 'c2'], 
+                          sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                'Thigh = np.nonzero( T_degC > 640)[0]',
+                                'Qsel = Q [ Thigh ]'],
+                          integrate = vars_to_integrate)
+        
+        sim = Simulation('LinkedCapacities')        
+        self.simdex=Simdex()
+        self.simdex.index_one_sim(sim, process=process)        
+        
+      
+        for v in ['c1_Thigh', 'c2_Q', 'c2_Q_Int']:
+            self.assertTrue(self.simdex.vardic.has_key(v))
+            
+        self.assertTrue(self.simdex.process.sub_vars.has_key('Q_Int'))
+        
+
+        self.simdex.h5.close()
 
     def test_init_subfolder_with_crappy_files(self):
        """ Test initiation from a folder including wrong .mat files"""
