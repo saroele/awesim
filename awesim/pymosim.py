@@ -327,6 +327,7 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     dsin_temp.writelines(file_data)
     dsin_temp.close()
     
+    #pdb.set_trace()
     if copy_to != None:
         dsin_to = os.getcwd() + '\\run_' + str(copy_to)
         dsin_file = os.getcwd() + '\\run_' + str(copy_to) + '\\dsin.txt'
