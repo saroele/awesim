@@ -15,6 +15,7 @@ from cStringIO import StringIO
 import sys
 import matplotlib
 from awesim import Simulation, Simdex, Result, Process, load_simdex
+import pandas as pd
 
 
 class ProcessTest(unittest.TestCase):
@@ -153,6 +154,13 @@ class ResultTest(unittest.TestCase):
         self.assertEqual(v[0], np.trapz(np.array([1,3,5,7]), x=np.arange(4)))
         self.assertEqual(v[1], np.trapz(np.array([2,8]), x=np.array([0,1])))
         self.assertEqual(v[2], np.trapz(np.arange(4), x=np.arange(4)))
+
+    def test_to_dataframe(self):
+        """Test the conversion of result to pandas.DataFrame"""
+
+        res = Result(self.values, self.time, self.identifiers)
+        df=res.to_dataframe()
+        self.assertEqual(len(df), 4)
         
 
 class SimulationTest(unittest.TestCase):
@@ -968,9 +976,10 @@ class SimdexTest(unittest.TestCase):
         self.simdex.save('Test_save.dat')
         loaded = load_simdex('Test_save.dat')
         for attr in self.simdex.__dict__:
-            exec("s = self.simdex." + attr)
-            exec("l = loaded." + attr)
-                   
+            if not attr == 'h5':
+                exec("s = self.simdex." + attr)
+                exec("l = loaded." + attr)
+                       
             if isinstance(s, np.ndarray):
                 self.assertTrue((l == s).all())
             else: 

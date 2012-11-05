@@ -9,13 +9,14 @@ import numpy as np
 #import os
 #import scipy.io
 #import re
-#import copy
+import copy
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
 #import cPickle as pickle
 #import bisect
 #import tables as tbl
 from datetime import datetime, timedelta
+from .utilities import make_datetimeindex
 import pandas
 import pdb
 import pickle
@@ -216,6 +217,32 @@ class Result(object):
         
         return result
 
+
+    def to_dataframe(self):
+        """
+        Return a pandas dataframe from this result
+        """
+        pdb.set_trace()
+        # check existence of attributes
+        if not hasattr(self, 'year'):
+            print 'We suppose the data is for 2011'
+            self.year=2011
+
+        for i, sid in enumerate(sorted(self.val.keys())):
+            # create a df from this single 'column'
+            index = make_datetimeindex(self.time[sid], self.year)
+            df_right = pandas.DataFrame(data=self.val[sid], index=index, columns=[sid])
+
+            if i==0:
+                df = copy.deepcopy(df_right)
+            else:
+                df = df.join(df_right, how='outer', sort=True)
+
+        return df
+            
+
+
+
     def plot(self, ylabel=None):
         """
         Creates a matplotlib figure with a simple plot of the timeseries for 
@@ -231,10 +258,7 @@ class Result(object):
             datetimes = [start + timedelta(t/86400.) for t in self.time[sid]]
             self.time4plots[sid] = date2num(datetimes)
             
-        # check existence of attributes
-        if not hasattr(self, 'year'):
-            print 'We suppose the data is for 2011'
-            self.year=2011
+
        
         fig = plt.figure()
         ax = fig.add_subplot(111)
