@@ -42,20 +42,12 @@ def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
     This function can be used in the post-processing too.
     """
     
-    interval_string = str(interval) + 'S'    
+ 
     dr = make_datetimeindex(time, 2012)
     df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
-    df15min = df.resample(interval_string, closed=label, label=label)
     
-    # now create bins for the groupby() method
-    time_s = df15min.index.asi8/1e9
-    time_s -= time_s[0]
-    df15min['bins'] = np.mod(time_s, period)
-    
-    df_aggr = df15min.groupby(['bins']).aggregate(np.mean)
-    
-    return df_aggr
-    
+    return aggregate_dataframe(df, period, interval, label)
+     
     
 def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
     """
@@ -65,7 +57,7 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
     label = 'left' or 'right'.  'Left' means that the label i contains data from 
     i till i+1, 'right' means that label i contains data from i-1 till i.    
     
-    Returns a new timeseries with period/interval values, one for each interval
+    Returns a new dataframe with period/interval values, one for each interval
     of the period. 
     
     A few limitations of the method:
@@ -96,6 +88,9 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
         
     
     df_aggr = df_resampled.groupby('bins').mean()
+    
+    # replace the bins by a real datetime index    
+    df_aggr.index = df_resampled.index[:len(df_aggr)]
     
     return df_aggr
 

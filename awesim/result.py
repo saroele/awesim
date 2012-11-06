@@ -126,7 +126,7 @@ class Result(object):
         return np.array(result)
         
 
-    def aggregate(self, period=86400, interval=3600):
+    def aggregate(self, period=86400, interval=3600, label='left'):
         
         def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
             """
@@ -222,7 +222,7 @@ class Result(object):
         """
         Return a pandas dataframe from this result
         """
-        pdb.set_trace()
+        #pdb.set_trace()
         # check existence of attributes
         if not hasattr(self, 'year'):
             print 'We suppose the data is for 2011'
@@ -231,11 +231,10 @@ class Result(object):
         for i, sid in enumerate(sorted(self.val.keys())):
             # create a df from this single 'column'
             index = make_datetimeindex(self.time[sid], self.year)
-            df_right = pandas.DataFrame(data=self.val[sid], index=index, columns=[sid])
-
             if i==0:
-                df = copy.deepcopy(df_right)
+                df = pandas.DataFrame(data=self.val[sid], index=index, columns=[sid])
             else:
+                df_right = pandas.DataFrame(data=self.val[sid], index=index, columns=[sid])
                 df = df.join(df_right, how='outer', sort=True)
 
         return df

@@ -154,6 +154,26 @@ class ResultTest(unittest.TestCase):
         self.assertEqual(v[0], np.trapz(np.array([1,3,5,7]), x=np.arange(4)))
         self.assertEqual(v[1], np.trapz(np.array([2,8]), x=np.array([0,1])))
         self.assertEqual(v[2], np.trapz(np.arange(4), x=np.arange(4)))
+        
+        
+    def test_aggregate(self):
+        """Aggregate the values"""
+        
+        values = {'c':np.arange(8), 
+                       'a':np.ones(8), 
+                       'b':np.array([2,8])}
+        time = {'c':np.arange(8), 
+                       'a':np.arange(8), 
+                       'b':np.array([0,1])}
+        identifiers = {'c':'sim C', 
+                       'a':'sim A', 
+                       'b':'sim B'}        
+        res = Result(values, time, identifiers)
+        v=res.aggregate(period=4,interval=1)
+        
+        print 'test_aggregate should be completed'        
+        self.assertTrue(True)
+     
 
     def test_to_dataframe(self):
         """Test the conversion of result to pandas.DataFrame"""
@@ -456,7 +476,7 @@ class SimulationTest(unittest.TestCase):
         self.assertRaises(ValueError, sim.analyse_cputime, extracted) 
         
     def test_analyse_cputime(self):
-        """check if the analysis of cpu-time raises an error when there is no CPUtime"""
+        """check the analysis of cpu-time """
         
         #pdb.set_trace()        
         sim = Simulation('./TestSet2/reswithCPUtime')
