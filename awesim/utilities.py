@@ -26,18 +26,18 @@ def make_datetimeindex(array_in_seconds, year):
     return pd.DatetimeIndex(datetimes)
 
 
-def aggregate_by_time(signal, time, period=86400, interval=900, label='left', year=2012):
+def aggregate_by_time(signal, time, period=86400, interval=900, year=2012):
     """
     Function to calculate the aggregated average of a timeseries by 
     period (typical a day) in bins of interval seconds (default = 900s).
     
-    label = 'left' or 'right'.  'Left' means that the label i contains data from 
+    label = 'left' or 'right'. 'Left' means that the label i contains data from 
     i till i+1, 'right' means that label i contains data from i-1 till i.    
     
     Returns an array with period/interval values, one for each interval
     of the period. 
     
-    A few limitations of the method:
+    Limitations of the method:
         - the period has to be a multiple of the interval
             
     This function can be used in the post-processing too.
@@ -47,15 +47,16 @@ def aggregate_by_time(signal, time, period=86400, interval=900, label='left', ye
     dr = make_datetimeindex(time, year)
     df = pd.DataFrame(data=signal, index=dr, columns=['signal'])
     
-    return aggregate_dataframe(df, period, interval, label).values
+    return aggregate_dataframe(df, period, interval, label='left').values
      
     
-def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
+def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
     """
     Function to calculate the aggregated average of a timeseries by 
     period (typical a day) in bins of interval seconds (default = 3600s).
     
-    label = 'left' or 'right'.  'Left' means that the label i contains data from 
+    label = 'left', 'middle' or 'right'.  
+    'Left' means that the label i contains data from 
     i till i+1, 'right' means that label i contains data from i-1 till i.    
     
     Returns a new dataframe with period/interval values, one for each interval
@@ -72,7 +73,7 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
       ==> period = 7*86400, interval=3600
       
     """
-    pdb.set_trace()
+    #pdb.set_trace()
     # first, create cumulative integrated signals for every column, put these
     # in a new dataframe called cum
 
@@ -86,15 +87,14 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
     # We convert it to milliseconds in order to obtain integer values for most cases
     interval_string = str(int(interval*1000)) + 'L'    
     df_resampled = cum.resample(interval_string, how='last', 
-                                      closed=label, label=label)
+                                      closed='right', label='right')
                                       
     
-    df_diff = pd.DataFrame(index=df_resampled.index)    
+    df_diff = pd.DataFrame(index=df_resampled.index[:-1])    
     for c in df_resampled.columns:
         # diffdata is the average signal during each interval
         reshaped_array = df_resampled[c].values.reshape(len(df_resampled))    
-        diffdata = np.zeros(len(reshaped_array))
-        diffdata[:-1] = np.diff(reshaped_array)
+        diffdata = np.diff(reshaped_array)/interval
         df_diff[c] = diffdata
     
     
@@ -114,6 +114,8 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
     
     # replace the bins by a real datetime index    
     df_aggr.index = df_diff.index[:len(df_aggr)]
+    if label == 'middle':    
+        df_aggr = df_aggr.tshift(int(interval*500), 'L' )
     
     return df_aggr
 

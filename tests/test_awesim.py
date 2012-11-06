@@ -1132,8 +1132,8 @@ class UtilitiesTest(unittest.TestCase):
         time=np.arange(0, 2*np.pi, 1e-3)
         sin = np.sin(time)
         cst = np.ones(len(time))*5.6
-        ag_sin = aggregate_by_time(sin, time, period=np.pi, interval=2e-3, label='left')
-        ag_cst = aggregate_by_time(cst, time, period=np.pi, interval=1e-2, label='left')
+        ag_sin = aggregate_by_time(sin, time, period=np.pi, interval=2e-3)
+        ag_cst = aggregate_by_time(cst, time, period=np.pi, interval=1e-2)
         
         self.assertAlmostEqual(np.mean(ag_sin), 0, places=4)        
         self.assertAlmostEqual(ag_cst.min(), ag_cst.max(), places=10)        
@@ -1146,7 +1146,7 @@ class UtilitiesTest(unittest.TestCase):
         period = 4
         interval = 2        
         
-        ag = aggregate_by_time(signal, time, period, interval, label='left')
+        ag = aggregate_by_time(signal, time, period, interval)
         ag = ag.reshape(2,)
         np.testing.assert_array_equal(ag, np.array([2.   ,  3.125]))
         
