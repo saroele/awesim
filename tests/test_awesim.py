@@ -15,6 +15,7 @@ from cStringIO import StringIO
 import sys
 import matplotlib
 from awesim import Simulation, Simdex, Result, Process, load_simdex
+from awesim.utilities import *
 import pandas as pd
 
 
@@ -1115,6 +1116,42 @@ class SimdexTest(unittest.TestCase):
             self.assertTrue(np.all((Q1[sid]+Q2[sid]) == QSum[sid]))
 
         self.simdex.h5.close()                
+
+
+class UtilitiesTest(unittest.TestCase):
+    """
+    Class for testing some of the function in utilities
+    """
+
+    def setUp(self):
+        pass
+
+    def test_aggregate_by_time(self):
+        """Aggregation of a single vector"""
+        
+        time=np.arange(0, 2*np.pi, 1e-3)
+        sin = np.sin(time)
+        cst = np.ones(len(time))*5.6
+        ag_sin = aggregate_by_time(sin, time, period=np.pi, interval=2e-3, label='left')
+        ag_cst = aggregate_by_time(cst, time, period=np.pi, interval=1e-2, label='left')
+        
+        self.assertAlmostEqual(np.mean(ag_sin), 0, places=4)        
+        self.assertAlmostEqual(ag_cst.min(), ag_cst.max(), places=10)        
+   
+    def test_aggregate_by_time_irregular_x(self):
+        """Aggregation of a single vector with non-evenly spaced time"""
+        
+        signal = np.arange(6)
+        time = np.array([0, 2, 3.5, 4, 6, 8])
+        period = 4
+        interval = 2        
+        
+        ag = aggregate_by_time(signal, time, period, interval, label='left')
+        ag = ag.reshape(2,)
+        np.testing.assert_array_equal(ag, np.array([2.   ,  3.125]))
+        
+ 
+
 #if __name__ == '__main__':
 #    unittest.main()
 
@@ -1123,9 +1160,10 @@ suite1 = unittest.TestLoader().loadTestsFromTestCase(ProcessTest)
 suite2 = unittest.TestLoader().loadTestsFromTestCase(ResultTest)
 suite3 = unittest.TestLoader().loadTestsFromTestCase(SimulationTest)
 suite4 = unittest.TestLoader().loadTestsFromTestCase(SimdexTest)
+suite5 = unittest.TestLoader().loadTestsFromTestCase(UtilitiesTest)
 
 
-alltests = unittest.TestSuite([suite1, suite2, suite3, suite4])
+alltests = unittest.TestSuite([suite1, suite2, suite3, suite4, suite5])
 
 unittest.TextTestRunner(verbosity=0, failfast=True).run(alltests)
 #unittest.TextTestRunner(verbosity=1).run(suite2)

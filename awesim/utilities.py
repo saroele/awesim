@@ -5,7 +5,8 @@ Utility functions for awesim
 
 Created 20120911 by RDC
 """
-import pandas
+from __future__ import division
+import pandas as pd
 import numpy as np
 from scipy.integrate import cumtrapz
 from scipy.stats import spearmanr
@@ -19,13 +20,13 @@ def make_datetimeindex(array_in_seconds, year):
     Create a pandas DateIndex from a time vector in seconds and the year.
     """
     
-    start = pandas.datetime(year, 1, 1)
-    datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
+    start = pd.datetime(year, 1, 1)
+    datetimes = [start + pd.datetools.timedelta(t/86400.) for t in array_in_seconds]
     
-    return pandas.DatetimeIndex(datetimes)
+    return pd.DatetimeIndex(datetimes)
 
 
-def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
+def aggregate_by_time(signal, time, period=86400, interval=900, label='left', year=2012):
     """
     Function to calculate the aggregated average of a timeseries by 
     period (typical a day) in bins of interval seconds (default = 900s).
@@ -43,10 +44,10 @@ def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
     """
     
  
-    dr = make_datetimeindex(time, 2012)
-    df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
+    dr = make_datetimeindex(time, year)
+    df = pd.DataFrame(data=signal, index=dr, columns=['signal'])
     
-    return aggregate_dataframe(df, period, interval, label)
+    return aggregate_dataframe(df, period, interval, label).values
      
     
 def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
@@ -71,26 +72,47 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
       ==> period = 7*86400, interval=3600
       
     """
+    pdb.set_trace()
+    # first, create cumulative integrated signals for every column, put these
+    # in a new dataframe called cum
+
+    cum = pd.DataFrame(index=dataframe.index)
+    for c in dataframe.columns:
+        # we need to remove the empty values for the cumtrapz function to work
+        ts = dataframe[c].dropna()
+        cum[c] = cumtrapz(ts.values, ts.index.asi8/1e9, initial=0)
+  
+    # first, resample the dataframe by the given interval   
+    # We convert it to milliseconds in order to obtain integer values for most cases
+    interval_string = str(int(interval*1000)) + 'L'    
+    df_resampled = cum.resample(interval_string, how='last', 
+                                      closed=label, label=label)
+                                      
+    # df_diff is the average signal during each interval
     
-    # first, resample the dataframe by the given interval    
-    interval_string = str(interval) + 'S'    
-    df_resampled = dataframe.resample(interval_string, closed=label, label=label)
+    
+    reshaped_array = df_resampled.values.reshape(len(df_resampled))    
+    diffdata = np.zeros(reshaped_array.shape)
+    diffdata[:-1,:] = np.diff(reshaped_array)
+    df_diff=pd.DataFrame(data = diffdata, index=df_resampled.index)
+    
+    
     
     # now create bins for the groupby() method
     # time in seconds    
-    time_s = df_resampled.index.asi8/1e9
+    time_s = df_diff.index.asi8/1e9
     time_s -= time_s[0]
     try:
-        df_resampled['bins'] = np.mod(time_s, period)
+        df_diff['bins'] = np.mod(time_s, period)
     except(KeyError):
-        df_resampled = pandas.DataFrame(df_resampled)
-        df_resampled['bins'] = np.mod(time_s, period)
+        df_diff = pd.DataFrame(df_resampled)
+        df_diff['bins'] = np.mod(time_s, period)
         
     
-    df_aggr = df_resampled.groupby('bins').mean()
+    df_aggr = df_diff.groupby('bins').mean()
     
     # replace the bins by a real datetime index    
-    df_aggr.index = df_resampled.index[:len(df_aggr)]
+    df_aggr.index = df_diff.index[:len(df_aggr)]
     
     return df_aggr
 
