@@ -31,9 +31,7 @@ def aggregate_by_time(signal, time, period=86400, interval=900, year=2012):
     Function to calculate the aggregated average of a timeseries by 
     period (typical a day) in bins of interval seconds (default = 900s).
     
-    label = 'left' or 'right'. 'Left' means that the label i contains data from 
-    i till i+1, 'right' means that label i contains data from i-1 till i.    
-    
+       
     Returns an array with period/interval values, one for each interval
     of the period. 
     
@@ -69,13 +67,13 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
             
     Example of usefulness: if the timeseries has 15-minute values for 1 year of
     eg. the electricity consumption of a building.  
-    - You want to know how a typical daily profile looks like, by 15 minuts 
+    - You want to know how a typical daily profile looks like, by 15 minutes 
       ==> period=86400, interval=900
     - you want to know how a typical weekly profile looks like, by hour:
       ==> period = 7*86400, interval=3600
       
     """
-    # pdb.set_trace()
+    #pdb.set_trace()
     # first, create cumulative integrated signals for every column, put these
     # in a new dataframe called cum
 
@@ -86,7 +84,10 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
     for c in dataframe.columns:
         # we need to remove the empty values for the cumtrapz function to work
         ts = dataframe[c].dropna()
-        cum[c] = cumtrapz(ts.values, ts.index.asi8/1e9, initial=0)
+        tscum = pd.TimeSeries(index=ts.index, 
+                              data=cumtrapz(ts.values, ts.index.asi8/1e9, initial=0),
+                              name=c)
+        cum=cum.join(tscum, how='outer', sort=True)
   
     # then, resample the dataframe by the given interval   
     # We convert it to milliseconds in order to obtain integer values for most cases
@@ -94,10 +95,10 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
     df_resampled = cum.resample(interval_string, how='last', 
                                       closed='right', label='right')
                                       
-    
+    # create dataframe with the average signal during each interval
     df_diff = pd.DataFrame(index=df_resampled.index[:-1])    
     for c in df_resampled.columns:
-        # diffdata is the average signal during each interval
+        
         reshaped_array = df_resampled[c].values.reshape(len(df_resampled))    
         diffdata = np.diff(reshaped_array)/interval
         df_diff[c] = diffdata
@@ -117,9 +118,14 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
     
     df_aggr = df_diff.groupby('bins').mean()
     
+    # pdb.set_trace()
     # replace the bins by a real datetime index    
-    df_aggr.index = df_diff.index[:len(df_aggr)]
-    if label == 'middle':    
+    if label == 'left':
+        df_aggr.index = df_diff.index[:len(df_aggr)]
+    elif label == 'right':
+        df_aggr.index = df_diff.index[1:1+len(df_aggr)]
+    elif label == 'middle':    
+        df_aggr.index = df_diff.index[:len(df_aggr)]        
         df_aggr = df_aggr.tshift(int(interval*500), 'L' )
     
     return df_aggr

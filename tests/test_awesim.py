@@ -161,11 +161,11 @@ class ResultTest(unittest.TestCase):
     def test_aggregate(self):
         """Aggregate the values"""
         
-        values = {'c':np.arange(8), 
-                       'a':np.ones(8), 
+        values = {'c':np.arange(9), 
+                       'a':np.ones(9), 
                        'b':np.array([2,8])}
-        time = {'c':np.arange(8), 
-                       'a':np.arange(8), 
+        time = {'c':np.arange(9), 
+                       'a':np.arange(9), 
                        'b':np.array([0,1])}
         identifiers = {'c':'sim C', 
                        'a':'sim A', 
@@ -173,8 +173,9 @@ class ResultTest(unittest.TestCase):
         res = Result(values, time, identifiers)
         v=res.aggregate(period=4,interval=1)
         
-        print 'test_aggregate should be completed'        
-        self.assertTrue(True)
+              
+        self.assertIsInstance(v, pd.core.frame.DataFrame)
+        self.assertItemsEqual(v.columns, values.keys())
      
 
     def test_to_dataframe(self):
@@ -467,7 +468,30 @@ class SimulationTest(unittest.TestCase):
         self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
         self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
         self.assertIsNotNone(result_pp['Time_Int'])     
+
+
+    def test_postprocess_aggregation(self):
+        """Postprocessing with aggregation on standard variables and mothers"""
         
+        J2kWh = 1e-6/3.6
+        vars_to_integrate = {'Q':J2kWh, 'Time':1}
+        
+        sim = Simulation('LinkedCapacities')
+        process = Process(mothers=['c1', 'c2'], sub_vars={'T':'T', 'Q':'heatPort.Q_flow'},
+                          sub_pars={'cap':'C'},
+                          pp = ['T_degC = T + 273.15', 
+                                'T_max =  np.amax( T_degC )',
+                                'Thigh = np.nonzero( T_degC > 640)[0]',
+                                'Qsel = Q [ Thigh ]',
+                                'T_dens = aggregate_by_time( T , Time , period=1000, interval = 100 )',
+                                'T_degC_dens = aggregate_by_time ( T_degC , Time , period=1000, interval = 100  )'                
+                                ],
+                          integrate = vars_to_integrate)
+        result_pp = sim.postprocess(process)
+        self.assertAlmostEqual(result_pp['c1_T_max'], 673.15, 2)
+        self.assertEqual(len(result_pp['c1_Qsel']), len(result_pp['c1_Thigh']))
+        self.assertAlmostEqual(result_pp['c1_Q_Int'], -result_pp['c2_Q_Int'], 10)
+        self.assertIsNotNone(result_pp['Time_Int'])        
 
     def test_analyse_cputime_raises(self):
         """check if the analysis of cpu-time raises an error when there is no CPUtime"""

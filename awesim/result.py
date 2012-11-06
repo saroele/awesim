@@ -16,7 +16,7 @@ from matplotlib.dates import date2num
 #import bisect
 #import tables as tbl
 from datetime import datetime, timedelta
-from .utilities import make_datetimeindex
+from .utilities import make_datetimeindex, aggregate_dataframe
 import pandas
 import pdb
 import pickle
@@ -126,55 +126,36 @@ class Result(object):
         return np.array(result)
         
 
-    def aggregate(self, period=86400, interval=3600, label='left'):
+    def aggregate(self, period=86400, interval=3600, label='middle'):
+        """
+        Calculate the aggregated average of the timeseries by 
+        period (typical a day) in bins of interval seconds (default = 3600s).
         
-        def aggregate_by_time(signal, time, period=86400, interval=900, label='left'):
-            """
-            Function to calculate the aggregated average of a timeseries by 
-            period (typical a day) in bins of interval seconds (default = 900s).
-            
-            label = 'left' or 'right'.  'Left' means that the label i contains data from 
-            i till i+1, 'right' means that label i contains data from i-1 till i.    
-            
-            Returns an array with period/interval values, one for each interval
-            of the period. 
-            
-            A few limitations of the method:
-                - the period has to be a multiple of the interval
-                    
-            This function can be used in the post-processing too.
-            """
-            
-            def make_datetimeindex(array_in_seconds, year):
-                """
-                Create a pandas DateIndex from a time vector in seconds and the year.
-                """
+        label = 'left', 'middle' or 'right'.  
+        'Left' means that the label i contains data from 
+        i till i+1, 'right' means that label i contains data from i-1 till i.    
+        
+        Returns a dataframe with period/interval values, one for each interval
+        of the period. 
+        
+        A few limitations of the method:
+            - the period has to be a multiple of the interval
+            - for correct results, the timespan of the timeseries has to be a 
+              multiple of the period
                 
-                start = pandas.datetime(year, 1, 1)
-                datetimes = [start + pandas.datetools.timedelta(t/86400.) for t in array_in_seconds]
-                
-                return pandas.DatetimeIndex(datetimes)
-            
-            interval_string = str(interval) + 'S'    
-            dr = make_datetimeindex(time, 2012)
-            df = pandas.DataFrame(data=signal, index=dr, columns=['signal'])
-            df15min = df.resample(interval_string, closed=label, label=label)
-            
-            # now create bins for the groupby() method
-            time_s = df15min.index.asi8/1e9
-            time_s -= time_s[0]
-            df15min['bins'] = np.mod(time_s, period)
-            
-            df_aggr = df15min.groupby(['bins']).mean()
-            
-            return df_aggr       
-
-        result = {}        
-        for sid in self.simulations:
-            result[sid] = aggregate_by_time(self.val[sid], self.time[sid], 
-                                            period=period, interval=interval)
-            
-        return result
+        Example of usefulness: if the timeseries has 15-minute values for 1 year of
+        eg. the electricity consumption of a building.  
+        - You want to know how a typical daily profile looks like, by 15 minutes 
+          ==> period=86400, interval=900
+        - you want to know how a typical weekly profile looks like, by hour:
+          ==> period = 7*86400, interval=3600
+          
+        """
+        
+        df = self.to_dataframe()
+        return aggregate_dataframe(df, period, interval, label)
+        
+        
 
     def smooth(self, interval=300):
         """
