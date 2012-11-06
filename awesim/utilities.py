@@ -88,13 +88,14 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='left'):
     df_resampled = cum.resample(interval_string, how='last', 
                                       closed=label, label=label)
                                       
-    # df_diff is the average signal during each interval
     
-    
-    reshaped_array = df_resampled.values.reshape(len(df_resampled))    
-    diffdata = np.zeros(reshaped_array.shape)
-    diffdata[:-1,:] = np.diff(reshaped_array)
-    df_diff=pd.DataFrame(data = diffdata, index=df_resampled.index)
+    df_diff = pd.DataFrame(index=df_resampled.index)    
+    for c in df_resampled.columns:
+        # diffdata is the average signal during each interval
+        reshaped_array = df_resampled[c].values.reshape(len(df_resampled))    
+        diffdata = np.zeros(len(reshaped_array))
+        diffdata[:-1] = np.diff(reshaped_array)
+        df_diff[c] = diffdata
     
     
     
