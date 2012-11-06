@@ -64,6 +64,8 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
     
     A few limitations of the method:
         - the period has to be a multiple of the interval
+        - for correct results, the timespan of the timeseries has to be a 
+          multiple of the period
             
     Example of usefulness: if the timeseries has 15-minute values for 1 year of
     eg. the electricity consumption of a building.  
@@ -73,17 +75,20 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
       ==> period = 7*86400, interval=3600
       
     """
-    #pdb.set_trace()
+    # pdb.set_trace()
     # first, create cumulative integrated signals for every column, put these
     # in a new dataframe called cum
 
+    if np.round(np.remainder(period, interval), 7) != 0:
+        raise ValueError('Aggregation will lead to wrong results if period is no multiple of interval')    
+    
     cum = pd.DataFrame(index=dataframe.index)
     for c in dataframe.columns:
         # we need to remove the empty values for the cumtrapz function to work
         ts = dataframe[c].dropna()
         cum[c] = cumtrapz(ts.values, ts.index.asi8/1e9, initial=0)
   
-    # first, resample the dataframe by the given interval   
+    # then, resample the dataframe by the given interval   
     # We convert it to milliseconds in order to obtain integer values for most cases
     interval_string = str(int(interval*1000)) + 'L'    
     df_resampled = cum.resample(interval_string, how='last', 

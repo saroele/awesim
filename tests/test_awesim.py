@@ -7,6 +7,7 @@ Created on Thu Jan 06 20:46:26 2011
 @author: RDC
 """
 
+from __future__ import division
 import pdb
 import numpy as np
 import unittest
@@ -1132,11 +1133,17 @@ class UtilitiesTest(unittest.TestCase):
         time=np.arange(0, 2*np.pi, 1e-3)
         sin = np.sin(time)
         cst = np.ones(len(time))*5.6
-        ag_sin = aggregate_by_time(sin, time, period=np.pi, interval=2e-3)
-        ag_cst = aggregate_by_time(cst, time, period=np.pi, interval=1e-2)
+        self.assertRaises(ValueError, aggregate_by_time, sin, time, period=np.pi, interval=2e-3)
         
-        self.assertAlmostEqual(np.mean(ag_sin), 0, places=4)        
-        self.assertAlmostEqual(ag_cst.min(), ag_cst.max(), places=10)        
+        time=np.arange(0, 6.28, 1e-3)
+        sin = np.sin(time)
+        
+        ag_sin = aggregate_by_time(sin, time, period=3.14, interval=2e-3)        
+        self.assertAlmostEqual(np.mean(ag_sin), 0, places=5)        
+        
+        ag_cst = aggregate_by_time(np.ones(13)*5.6, np.arange(13), period=4, interval=2)
+        self.assertAlmostEqual(ag_cst.min(), ag_cst.max(), places=10) 
+        self.assertAlmostEqual(ag_cst.min(), 5.6, places=10)
    
     def test_aggregate_by_time_irregular_x(self):
         """Aggregation of a single vector with non-evenly spaced time"""
