@@ -171,9 +171,19 @@ class ResultTest(unittest.TestCase):
                        'a':'sim A', 
                        'b':'sim B'}        
         res = Result(values, time, identifiers)
-        v=res.aggregate(period=4,interval=1)
         
-              
+        self.assertRaises(NotImplementedError, res.aggregate, 4, 1)
+        
+        
+        values = {'c':np.arange(9), 
+                       'a':np.ones(9)}
+        time = {'c':np.arange(9), 
+                       'a':np.arange(9)}
+        identifiers = {'c':'sim C', 
+                       'a':'sim A'}        
+        res = Result(values, time, identifiers)
+        v = res.aggregate(4,1)
+                  
         self.assertIsInstance(v, pd.core.frame.DataFrame)
         self.assertItemsEqual(v.columns, values.keys())
      
@@ -184,7 +194,38 @@ class ResultTest(unittest.TestCase):
         res = Result(self.values, self.time, self.identifiers)
         df=res.to_dataframe()
         self.assertEqual(len(df), 4)
+
+    def test_to_dataframe_raises(self):
+        """Raise exception when the dataframe length seems unlogical"""
         
+        values = {'a':np.array([0,0,1,1,1,1,1]), 
+                       'b':np.arange(7),
+                        'c':np.arange(7)}
+        time = { 'a':np.array([0,200,200, 400, 400,600,600]), 
+                       'b':np.array([0,200,200,400, 400,600,600 ]),
+                        'c':np.array([0,200,200,400, 400,600,600 ])}
+         
+        res = Result(values, time)
+        self.assertRaises(NotImplementedError, res.to_dataframe)
+
+        
+
+    def test_aggregate_duplicate_index(self):
+        """Aggregate a result with 'events' (duplicate index) AND multiple timeseries"""
+        
+        values = {'a':np.array([0,0,1,1,1,1,1]), 
+                       'b':np.arange(7)}
+        time = { 'a':np.array([0,200,200,300, 400,700,800]), 
+                       'b':np.array([0,200,400,400,600,600,800 ])}
+         
+        res = Result(values, time)
+        v=res.aggregate(period=800, interval=400)
+        
+              
+        self.assertIsInstance(v, pd.core.frame.DataFrame)
+        self.assertItemsEqual(v.columns, values.keys())
+        np.testing.assert_array_almost_equal(v['a'].values, np.array([0.5, 1.]))
+
 
 class SimulationTest(unittest.TestCase):
     """

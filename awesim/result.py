@@ -16,8 +16,8 @@ from matplotlib.dates import date2num
 #import bisect
 #import tables as tbl
 from datetime import datetime, timedelta
-from .utilities import make_datetimeindex, aggregate_dataframe
-import pandas
+from .utilities import aggregate_by_time, make_datetimeindex, aggregate_dataframe
+import pandas as pd
 import pdb
 import pickle
 
@@ -149,11 +149,38 @@ class Result(object):
           ==> period=86400, interval=900
         - you want to know how a typical weekly profile looks like, by hour:
           ==> period = 7*86400, interval=3600
-          
+        
+        Changelog:
+            - 20121113: split the method because to_dataframe() does NOT 
+                        work with events if there are multiple sid's in the
+                        result.  
         """
         
-        df = self.to_dataframe()
-        return aggregate_dataframe(df, period, interval, label)
+        # check existence of attributes
+        if not hasattr(self, 'year'):
+            print 'We suppose the data is for 2011'
+            self.year=2011
+        
+        #pdb.set_trace()
+        for i, sid in enumerate(sorted(self.val.keys())):
+            agg_array = aggregate_by_time(self.val[sid], self.time[sid], period, interval)
+            if not len(agg_array) == int(period/interval):
+                raise NotImplementedError("This will not work: there are no values at the interval timestaps for %s" % (sid))
+            if i==0:
+                agg_array_all = copy.deepcopy(agg_array)
+            else:
+                agg_array_all = np.column_stack((agg_array_all, agg_array))
+        
+        if label == 'left':
+            index = make_datetimeindex(np.arange(0, period, interval), self.year)
+        elif label == 'right':
+            index = make_datetimeindex(np.arange(interval, period+interval, interval), self.year)
+        elif label == 'middle':
+            index = make_datetimeindex(np.arange(0+interval/2., period+interval/2., interval), self.year)
+        
+        df_agg = pd.DataFrame(data=agg_array_all, index=index, 
+                              columns=sorted(self.val.keys()))        
+        return df_agg
         
         
 
@@ -202,8 +229,12 @@ class Result(object):
     def to_dataframe(self):
         """
         Return a pandas dataframe from this result
+        Attention: this method does NOT work if res contains multiple
+        SID's who contain events (duplicate index values).  
+        This case is roughly detected by checking the resulting df length.
+    
         """
-        #pdb.set_trace()
+        # pdb.set_trace()
         # check existence of attributes
         if not hasattr(self, 'year'):
             print 'We suppose the data is for 2011'
@@ -213,11 +244,14 @@ class Result(object):
             # create a df from this single 'column'
             index = make_datetimeindex(self.time[sid], self.year)
             if i==0:
-                df = pandas.DataFrame(data=self.val[sid], index=index, columns=[sid])
+                df = pd.DataFrame(data=self.val[sid], index=index, columns=[sid])
             else:
-                df_right = pandas.DataFrame(data=self.val[sid], index=index, columns=[sid])
+                df_right = pd.DataFrame(data=self.val[sid], index=index, columns=[sid])
                 df = df.join(df_right, how='outer', sort=True)
 
+
+        if len(df) > len(self.val) * max([len(self.val[sid]) for sid in self.val]):
+            raise NotImplementedError("The result contains multiple SID's and events.  Pandas cannot join() these type of dataframes (yet)" )
         return df
             
 

@@ -11,6 +11,7 @@ import numpy as np
 from scipy.integrate import cumtrapz
 from scipy.stats import spearmanr
 import pdb
+from copy import deepcopy
 import matplotlib.pyplot as plt
 from matplotlib.dates import date2num
 from datetime import datetime, timedelta
@@ -80,21 +81,30 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
     if np.round(np.remainder(period, interval), 7) != 0:
         raise ValueError('Aggregation will lead to wrong results if period is no multiple of interval')    
     
-    cum = pd.DataFrame(index=dataframe.index)
-    for c in dataframe.columns:
+    # There's a problem with the join() operation on dataframes with duplicate
+    # time index.  The current method returns a cartesian product instead of
+    # what we want.  We circumvent by joining the aggregated values    
+    
+    
+    for i, c in enumerate(dataframe.columns):
         # we need to remove the empty values for the cumtrapz function to work
+               
         ts = dataframe[c].dropna()
-        tscum = pd.TimeSeries(index=ts.index, 
-                              data=cumtrapz(ts.values, ts.index.asi8/1e9, initial=0),
-                              name=c)
-        cum=cum.join(tscum, how='outer', sort=True)
-  
-    # then, resample the dataframe by the given interval   
-    # We convert it to milliseconds in order to obtain integer values for most cases
-    interval_string = str(int(interval*1000)) + 'L'    
-    df_resampled = cum.resample(interval_string, how='last', 
-                                      closed='right', label='right')
-                                      
+        tscum = pd.DataFrame(data=cumtrapz(ts.values, ts.index.asi8/1e9, initial=0),
+                             index=ts.index, 
+                             columns=[c])
+        
+        # then, resample the dataframe by the given interval   
+        # We convert it to milliseconds in order to obtain integer values for most cases
+        interval_string = str(int(interval*1000)) + 'L'    
+        ts_resampled = tscum.resample(interval_string, how='last', 
+                                          closed='right', label='right')
+        if i==0:
+            # first run, result is the ts
+            df_resampled = deepcopy(ts_resampled)
+        else:
+            df_resampled.join(ts_resampled)                              
+
     # create dataframe with the average signal during each interval
     df_diff = pd.DataFrame(index=df_resampled.index[:-1])    
     for c in df_resampled.columns:
