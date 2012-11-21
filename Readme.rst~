@@ -13,7 +13,7 @@ With awesim you can:
     4. keep an overview of your cases by creating an index (called simdex) of different results
     5. filter your results based on filenames or parameter sets 
       
-Most of the tools provided are currently based on Dymola and the .mat result file. However, as other tools support this format, **awesim** could as well be used with OpenModelica or JModelica or other tools. 
+Most of the tools provided are currently based on Dymola and the .mat result file. 
 
 Simulation management is currently developed by 3E and KU Leuven (Belgium).  We are currently evaluating the license...
 
