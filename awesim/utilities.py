@@ -90,7 +90,7 @@ def aggregate_dataframe(dataframe, period=86400, interval=3600, label='middle'):
         # we need to remove the empty values for the cumtrapz function to work
                
         ts = dataframe[c].dropna()
-        tscum = pd.DataFrame(data=cumtrapz(ts.values, ts.index.asi8/1e9, initial=0),
+        tscum = pd.DataFrame(data=cumtrapz(ts.values, ts.index.asi8/1e9),
                              index=ts.index, 
                              columns=[c])
         

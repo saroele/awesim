@@ -1,0 +1,165 @@
+#1
+char Aclass(3,11)
+Atrajectory
+1.1
+
+char name(46,32)
+time
+building.RC.rWal
+building.RC.cZon
+building.RC.capZon.C
+building.RC.resWal.G
+building.RC.capZon.der(T)
+building.RC.capZon.T
+building.hvac.heatPortEmb.T
+building.hvac.heatPortRad.T
+building.RC.resWal.port_b.T
+building.RC.heatPortRad.T
+building.RC.heatPortEmb.T
+building.hvac.TZon
+building.RC.heatPortCon.T
+building.RC.capZon.port.T
+building.RC.senTZon.port.T
+building.RC.senTZon.T
+building.RC.TZon
+building.RC.heatPortSol.T
+building.hvac.heatPortCon.T
+TAmb
+building.TAmb
+building.RC.resWal.port_a.T
+building.TAmb2HeaPor.port.T
+building.RC.heatPortAmb.T
+building.TAmb2HeaPor.T
+QHea
+building.hvac.QHea
+building.hvac.heatPortCon.Q_flow
+building.RC.heatPortCon.Q_flow
+building.RC.capZon.der_T
+building.RC.capZon.port.Q_flow
+building.RC.senTZon.port.Q_flow
+building.RC.resWal.dT
+building.RC.heatPortAmb.Q_flow
+building.RC.resWal.port_b.Q_flow
+building.TAmb2HeaPor.port.Q_flow
+building.RC.resWal.port_a.Q_flow
+building.RC.resWal.Q_flow
+building.RC.heatPortSol.Q_flow
+building.RC.heatPortRad.Q_flow
+building.hvac.heatPortRad.Q_flow
+building.RC.heatPortEmb.Q_flow
+building.hvac.heatPortEmb.Q_flow
+_test_runtime_options
+_test_runtime_options_2
+
+char description(46,68)
+Time in [s]
+Total thermal resistance of the walls, in K/W
+Thermal capacity of the zone
+Heat capacity of element (= cp*m)
+Constant thermal conductance of material
+
+Temperature of element
+Port temperature
+Port temperature
+Port temperature
+Port temperature
+Port temperature
+
+Port temperature
+Port temperature
+Port temperature
+
+
+Port temperature
+Port temperature
+
+
+Port temperature
+Port temperature
+Port temperature
+
+
+
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Time derivative of temperature (= der(T))
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+port_a.T - port_b.T
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate from port_a -> port_b
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+Heat flow rate (positive if flowing from outside into the component)
+
+
+
+int dataInfo(46,4)
+0 1 0 -1 # time
+1 2 0 -1 # building.RC.rWal
+1 3 0 -1 # building.RC.cZon
+1 4 0 -1 # building.RC.capZon.C
+1 5 0 -1 # building.RC.resWal.G
+2 2 0 -1 # building.RC.capZon.der(T)
+2 3 0 -1 # building.RC.capZon.T
+2 3 0 -1 # building.hvac.heatPortEmb.T
+2 3 0 -1 # building.hvac.heatPortRad.T
+2 3 0 -1 # building.RC.resWal.port_b.T
+2 3 0 -1 # building.RC.heatPortRad.T
+2 3 0 -1 # building.RC.heatPortEmb.T
+2 3 0 -1 # building.hvac.TZon
+2 3 0 -1 # building.RC.heatPortCon.T
+2 3 0 -1 # building.RC.capZon.port.T
+2 3 0 -1 # building.RC.senTZon.port.T
+2 3 0 -1 # building.RC.senTZon.T
+2 3 0 -1 # building.RC.TZon
+2 3 0 -1 # building.RC.heatPortSol.T
+2 3 0 -1 # building.hvac.heatPortCon.T
+2 4 0 -1 # TAmb
+2 4 0 -1 # building.TAmb
+2 4 0 -1 # building.RC.resWal.port_a.T
+2 4 0 -1 # building.TAmb2HeaPor.port.T
+2 4 0 -1 # building.RC.heatPortAmb.T
+2 4 0 -1 # building.TAmb2HeaPor.T
+2 5 0 -1 # QHea
+2 5 0 -1 # building.hvac.QHea
+2 -5 0 -1 # building.hvac.heatPortCon.Q_flow
+2 5 0 -1 # building.RC.heatPortCon.Q_flow
+2 6 0 -1 # building.RC.capZon.der_T
+2 7 0 -1 # building.RC.capZon.port.Q_flow
+2 8 0 -1 # building.RC.senTZon.port.Q_flow
+2 9 0 -1 # building.RC.resWal.dT
+2 10 0 -1 # building.RC.heatPortAmb.Q_flow
+2 -10 0 -1 # building.RC.resWal.port_b.Q_flow
+2 -10 0 -1 # building.TAmb2HeaPor.port.Q_flow
+2 10 0 -1 # building.RC.resWal.port_a.Q_flow
+2 10 0 -1 # building.RC.resWal.Q_flow
+2 11 0 -1 # building.RC.heatPortSol.Q_flow
+2 12 0 -1 # building.RC.heatPortRad.Q_flow
+2 -12 0 -1 # building.hvac.heatPortRad.Q_flow
+2 13 0 -1 # building.RC.heatPortEmb.Q_flow
+2 -13 0 -1 # building.hvac.heatPortEmb.Q_flow
+1 6 0 -1 # _test_runtime_options
+1 7 0 -1 # _test_runtime_options_2
+
+float data_1(2,7)
+0.00000000000000E+00 3.26852000000000E-03 1.32947000000000E+06 1.32947000000000E+06 3.05948869824875E+02 0.00000000000000E+00 0.00000000000000E+00
+6.04800000000000E+05         3.26852000000000E-03 1.32947000000000E+06 1.32947000000000E+06 3.05948869824875E+02 0.00000000000000E+00 0.00000000000000E+00
+
+float data_2(11,13)                          
+ 0.00000000000000E+00 -2.33580376294499E-03 2.93150000000000E+02 2.83000000000000E+02 0.00000000000000E+00 -2.33580376294499E-03 -3.10538102872247E+03 0.00000000000000E+00 -1.01500000000000E+01 -3.10538102872247E+03 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 6.04800000000000E+04 -3.21892364569270E-04 2.76831184916348E+02 2.75432434065695E+02 0.00000000000000E+00 -3.21892364569270E-04 -4.27946241923907E+02 0.00000000000000E+00 -1.39875085065313E+00 -4.27946241923907E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 1.20960000000000E+05 -3.30567899510822E-04 2.89099191213777E+02 2.87662741699797E+02 0.00000000000000E+00 -3.30567899510822E-04 -4.39480105362653E+02 0.00000000000000E+00 -1.43644951397994E+00 -4.39480105362653E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 1.81440000000000E+05 5.90151037252667E-04 2.88366819804831E+02 2.87662741699797E+02 1.00000000000000E+03 5.90151037252667E-04 7.84588099496304E+02 0.00000000000000E+00 -7.04078105034341E-01 -2.15411900503696E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 2.41920000000000E+05 4.69779799222843E-06 2.78680540257661E+02 2.75432434065695E+02 1.00000000000000E+03 4.69779799222843E-06 6.24558149672794E+00 0.00000000000000E+00 -3.24810619196631E+00 -9.93754418503272E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 3.02400000000000E+05 -5.25773612929220E-04 2.88553216281379E+02 2.83000000000000E+02 1.00000000000000E+03 -5.25773612929220E-04 -6.99000245181011E+02 0.00000000000000E+00 -5.55321628137904E+00 -1.69900024518101E+03 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 3.62880000000000E+05 3.22000070961302E-04 2.92436867056373E+02 2.90567565934305E+02 1.00000000000000E+03 3.22000070961302E-04 4.28089434340922E+02 0.00000000000000E+00 -1.86930112206801E+00 -5.71910565659078E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 4.23360000000000E+05 3.30539129401615E-04 2.80169453803835E+02 2.78337258300203E+02 1.00000000000000E+03 3.30539129401615E-04 4.39441856365566E+02 0.00000000000000E+00 -1.83219550363202E+00 -5.60558143634434E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 4.83840000000000E+05 -5.20060420151845E-04 2.83865648477776E+02 2.78337258300203E+02 1.00000000000000E+03 -5.20060420151845E-04 -6.91404726779273E+02 0.00000000000000E+00 -5.52839017757259E+00 -1.69140472677927E+03 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 5.44320000000000E+05 -4.68989076892119E-06 2.93856465382296E+02 2.90567565934305E+02 1.00000000000000E+03 -4.68989076892119E-06 -6.23506908055765E+00 0.00000000000000E+00 -3.28889944799118E+00 -1.00623506908056E+03 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00
+ 6.04800000000000E+05 5.25756034378016E-04 2.83983900104445E+02 2.83000000000000E+02 1.00000000000000E+03 5.25756034378016E-04 6.98976875024542E+02 0.00000000000000E+00 -9.83900104444785E-01 -3.01023124975458E+02 0.00000000000000E+00 -0.00000000000000E+00 -0.00000000000000E+00

@@ -244,6 +244,19 @@ class SimulationTest(unittest.TestCase):
             self.assertTrue(sim.__dict__.has_key(attr), 
                             'Simulation.__init__() dit not create \
                             attribute %s' % attr)
+
+    def test___init__attributes(self):
+        """
+        Tests creation of Simulation object from well known file.
+        Checks if attributes are present 
+        Make sure the file LinkedCapacities.mat is in the current work directory
+
+        """
+        sim = Simulation('LinkedCapacities')
+        for attr in ['dataInfo', 'data_1', 'data_2', 'filename', 'names']:
+            self.assertTrue(sim.__dict__.has_key(attr), 
+                            'Simulation.__init__() dit not create \
+                            attribute %s' % attr)
                             
 
     def test___init__attributes_array(self):
@@ -1237,6 +1250,6 @@ suite5 = unittest.TestLoader().loadTestsFromTestCase(UtilitiesTest)
 
 alltests = unittest.TestSuite([suite1, suite2, suite3, suite4, suite5])
 
-unittest.TextTestRunner(verbosity=0, failfast=False).run(alltests)
-#unittest.TextTestRunner(verbosity=1).run(suite2)
+#unittest.TextTestRunner(verbosity=1, failfast=False).run(alltests)
+unittest.TextTestRunner(verbosity=1).run(suite3)
 
