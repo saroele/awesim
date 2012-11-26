@@ -94,13 +94,13 @@ class Simulation:
                 return dataInfo, names
             
             def parse_data_1_2(data, s):
-                """Simply build one long string, later turn into array and reshape"""
+                """Simply build one np array later reshape"""
                 
                 row = np.fromstring(s, sep=' ')
                 if data == None:
                     data = row
                 else:
-                    data = np.append((data, row))
+                    data = np.append(data, row)
                 return data
 
             # read a .txt file
@@ -112,6 +112,8 @@ class Simulation:
             # we cycle of the lines only once
             dataInfo_active, data_1_active, data_2_active = False, False, False
             for i,l in enumerate(lines):
+                if np.mod(i, 10000) == 0:
+                    print 'line = ', i
                 # we use the fact that we'll first find dataInfo, then
                 # data_1, and finally data_2
                 if l.find('dataInfo') > -1 and not l.startswith('#'):
