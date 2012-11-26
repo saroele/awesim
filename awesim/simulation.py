@@ -93,22 +93,35 @@ class Simulation:
                 
                 return dataInfo, names
             
-            def parse_data_1_2(data, s):
-                """Simply build one np array later reshape"""
+            def parse_data_1_2(data, s, row, col):
+                """data is the array we want to fill with values from s
+                We keep track of the last filled element:
+                    row, col is where the next one should come
+                """
                 
-                row = np.fromstring(s, sep=' ')
-                if data == None:
-                    data = row
+                to_add = np.fromstring(s, sep=' ')
+                places_in_current_row = data.shape[1] - col
+                if len(to_add) < places_in_current_row :
+                    data[row, col:col+len(to_add)] = to_add
+                    col += len(to_add)
+                elif len(to_add) == places_in_current_row :
+                    data[row, col:col+len(to_add)] = to_add
+                    row += 1
+                    col = 0
                 else:
-                    data = np.append(data, row)
-                return data
+                    raise ValueError("Godverdomme, knoeiers")
+                
+                # final check
+                if row > data.shape[0] and col == 0:
+                    print 'The array is filled up to the last element'
+                return data, row, col
 
             # read a .txt file
             filename = os.path.abspath(filename)
             f = file(filename, 'r')
             lines = f.readlines()
             
-            dataInfo, names, data_1_temp, data_2_temp = None, None, None, None
+            dataInfo, names = None, None
             # we cycle of the lines only once
             dataInfo_active, data_1_active, data_2_active = False, False, False
             for i,l in enumerate(lines):
@@ -126,12 +139,14 @@ class Simulation:
                     start = i+1
                     shape_string = l.split('data_1(')[-1].strip().rstrip(')') # x,y as string
                     shape_1 = eval(shape_string)
+                    data_1 = np.ndarray(shape_1)
                 elif l.find('data_2') > -1 and not l.startswith('#'):
                     data_1_active = False
                     data_2_active = True                    
                     start = i+1
                     shape_string = l.split('data_2(')[-1].strip().rstrip(')') # x,y as string
                     shape_2= eval(shape_string)
+                    data_2 = np.ndarray(shape_2)
                 # parse the line if needed
                 if dataInfo_active and start <= i < stop:
                     dataInfo, names = parse_dataInfo(dataInfo, names, l)
