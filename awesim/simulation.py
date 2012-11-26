@@ -93,18 +93,22 @@ class Simulation:
                 
                 return dataInfo, names
             
-            def parse_data_1_2(total_string, s):
+            def parse_data_1_2(data, s):
                 """Simply build one long string, later turn into array and reshape"""
                 
-                total_string = ' '.join([total_string, s.strip()])
-                return total_string
+                row = np.fromstring(s, sep=' ')
+                if data == None:
+                    data = row
+                else:
+                    data = np.append((data, row))
+                return data
 
             # read a .txt file
             filename = os.path.abspath(filename)
             f = file(filename, 'r')
             lines = f.readlines()
             
-            dataInfo, names, data_1_str, data_2_str = None, None, '', ''
+            dataInfo, names, data_1_temp, data_2_temp = None, None, None, None
             # we cycle of the lines only once
             dataInfo_active, data_1_active, data_2_active = False, False, False
             for i,l in enumerate(lines):
@@ -131,18 +135,18 @@ class Simulation:
                     dataInfo, names = parse_dataInfo(dataInfo, names, l)
                 elif data_1_active and start <= i:
                     if len(l.strip()) > 0:
-                        data_1_str = parse_data_1_2(data_1_str, l)
+                        data_1_temp = parse_data_1_2(data_1_temp, l)
                     else:
                         # we are in the white line between data_1 and _2
                         pass                            
                 elif data_2_active and start <= i:
                     if len(l.strip()) > 0:
-                        data_2_str = parse_data_1_2(data_2_str, l)
+                        data_2_temp = parse_data_1_2(data_2_temp, l)
                     else:
                         # we are in the white line between data_1 and _2
                         pass 
-            data_1 = np.fromstring(data_1_str, sep=' ').reshape(shape_1)
-            data_2 = np.fromstring(data_2_str, sep=' ').reshape(shape_2)
+            data_1 = data_1_temp.reshape(shape_1)
+            data_2 = data_2_temp.reshape(shape_2)
                     
                     
         else:
