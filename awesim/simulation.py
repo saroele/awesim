@@ -140,6 +140,7 @@ class Simulation:
                     shape_string = l.split('data_1(')[-1].strip().rstrip(')') # x,y as string
                     shape_1 = eval(shape_string)
                     data_1 = np.ndarray(shape_1)
+                    row,col=0,0
                 elif l.find('data_2') > -1 and not l.startswith('#'):
                     data_1_active = False
                     data_2_active = True                    
@@ -147,23 +148,22 @@ class Simulation:
                     shape_string = l.split('data_2(')[-1].strip().rstrip(')') # x,y as string
                     shape_2= eval(shape_string)
                     data_2 = np.ndarray(shape_2)
+                    row,col=0,0
                 # parse the line if needed
                 if dataInfo_active and start <= i < stop:
                     dataInfo, names = parse_dataInfo(dataInfo, names, l)
                 elif data_1_active and start <= i:
                     if len(l.strip()) > 0:
-                        data_1_temp = parse_data_1_2(data_1_temp, l)
+                        data_1, row, col = parse_data_1_2(data_1, l, row, col)
                     else:
                         # we are in the white line between data_1 and _2
                         pass                            
                 elif data_2_active and start <= i:
                     if len(l.strip()) > 0:
-                        data_2_temp = parse_data_1_2(data_2_temp, l)
+                        data_2, row, col = parse_data_1_2(data_2, l, row, col)
                     else:
                         # we are in the white line between data_1 and _2
                         pass 
-            data_1 = data_1_temp.reshape(shape_1)
-            data_2 = data_2_temp.reshape(shape_2)
                     
                     
         else:
