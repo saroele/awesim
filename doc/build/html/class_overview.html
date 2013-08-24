@@ -1,0 +1,816 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Class overview &mdash; awesim 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="awesim 0.1 documentation" href="index.html" />
+    <link rel="prev" title="Defining a post-process" href="process.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="process.html" title="Defining a post-process"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">awesim 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="class-overview">
+<span id="id1"></span><h1>Class overview<a class="headerlink" href="#class-overview" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="class-simulation">
+<h2>Class Simulation<a class="headerlink" href="#class-simulation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="awesim.Simulation">
+<em class="property">class </em><tt class="descclassname">awesim.</tt><tt class="descname">Simulation</tt><big>(</big><em>filename</em>, <em>verbose=False</em><big>)</big><a class="headerlink" href="#awesim.Simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for doing operations one single simulation file
+The simulation files can be .mat files or .txt files. 
+A Simulation object contains all the (useful) info that is in the file.  
+Therefore, objects of the Simulation class are relatively memory intensive,
+depending on the size of the result file.</p>
+<dl class="docutils">
+<dt>Most important attributes are:</dt>
+<dd><ul class="first last simple">
+<li>self.filename (path to the result file)</li>
+<li>self.names (list of all variable and parameter names)</li>
+<li>self.dataInfo (mapping of vars and pars to data1 and data2)</li>
+<li>self.data1 (contains the values of the parameters)</li>
+<li>self.data2 (contains the values of the variables (timeseries))</li>
+</ul>
+</dd>
+<dt>Most important methods are:</dt>
+<dd><ul class="first last simple">
+<li>get_value(name) : retreives the value(s) for name, name can be 
+a parameter or a variable</li>
+<li>exist(regex) : returns all vars and pars that satisfy the regex</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="awesim.Simulation.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>filename</em>, <em>verbose=False</em><big>)</big><a class="headerlink" href="#awesim.Simulation.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Simulation object from a result file
+The filename can be an absolute path, or a filename in the current work
+directory.  If the filename has no extension, it is supposed to 
+be a .mat file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.analyse_cputime">
+<tt class="descname">analyse_cputime</tt><big>(</big><em>variables=None</em>, <em>interval=900</em>, <em>screendump=30</em><big>)</big><a class="headerlink" href="#awesim.Simulation.analyse_cputime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyse the relation between cputime and some variables.</p>
+<p>It is required that the time array of the simulation contains an 
+entry for every multiple of the interval.</p>
+<ul class="simple">
+<li>variables: dictionary with name/array for which the correlation 
+is to be found.  If the variablename ends with Int (case sensitive)
+it is supposed to be cumulative
+if variables = None, all variables found in the simulation are tested.</li>
+<li>interval: the desired interval for resampling, integer in seconds</li>
+<li>screendump: integer, number of lines to print.  A negative number
+prints all the results</li>
+</ul>
+<p>dictionary with same keys as variables, and the correlation as values</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.exist">
+<tt class="descname">exist</tt><big>(</big><em>regex</em><big>)</big><a class="headerlink" href="#awesim.Simulation.exist" title="Permalink to this definition">¶</a></dt>
+<dd><p>exist(regex)</p>
+<p>regex = regular expression, not case sensitive</p>
+<p>This method searches for parameter and variable names matching the 
+regular expression in self.names.
+It returns a list with all matching names from self.names</p>
+<p>Attention: if you want to check if eg.  c[3].T exists, you have to 
+escape the [ and ] with a backlslash, like this:
+self.exist(&#8216;c[3].T). Otherwise c3.T is sought for. This is 
+because in regex syntax, [] is used to indicate a set of characters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.extract">
+<tt class="descname">extract</tt><big>(</big><em>var</em>, <em>arrays='sum'</em><big>)</big><a class="headerlink" href="#awesim.Simulation.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return dictionary with values of the variables/parameters to extract</p>
+<p>This method takes a dictionary as input with short_name/full_name pairs.
+It returns a dictionary with short_name/value pairs, value = numpy array.</p>
+<p>Important: value is ALWAYS a np.array, even if is it a single value</p>
+<dl class="docutils">
+<dt>Handling of arrays is implemented like this:</dt>
+<dd><ul class="first last">
+<li><p class="first">for the array variables you wish to get, replace the [i] (i=int)
+by [x].
+Example: discFullDyn20.tabs.tabs[x].nakedTabs.C2.[1].C&#8217;</p>
+</li>
+<li><p class="first">All values for all present &#8216;x&#8217; will be extracted</p>
+</li>
+<li><dl class="first docutils">
+<dt>argument arrays defines what happens with these values:</dt>
+<dd><ul class="first last simple">
+<li>arrays=&#8217;sum&#8217; (default): returns the sum of all values</li>
+<li>arrays=&#8217;average&#8217; returns the average of all values</li>
+<li>arrays=&#8217;each&#8217; : returns an array with all the values</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Attention, the array argument defines the action for ALL arrays.</p>
+</li>
+</ul>
+</dd>
+</dl>
+<p>If a long_name is not found, the method passes on, no exception raised!</p>
+<p>First version 20110831, RDC</p>
+<p>20111123 - raise no exception if a variable is not found
+20111128 - all values are numpy arrays. The reason for doing this is</p>
+<blockquote>
+<div>to make postprocessing more straightforward and robust</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.get_objects">
+<tt class="descname">get_objects</tt><big>(</big><em>mother=''</em><big>)</big><a class="headerlink" href="#awesim.Simulation.get_objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the names of the objects in a mother model</p>
+<p>Returns a list with the model names (part before the &#8216;.&#8217;)
+A mother name can be specified as a string (full name up to the model).
+Example: mother = &#8216;foo.fooBar&#8217;
+If no mother model is specified, this method gets all the main objects, 
+except &#8216;Time&#8217;.</p>
+<p>If needed, speed can be improved by using sorted lists 
+Doesn&#8217;t work with arrays yet (to do that, excape the [ and ] 
+in the mother name)</p>
+<p>First version: 20110906, RDC</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.get_value">
+<tt class="descname">get_value</tt><big>(</big><em>self</em>, <em>name</em><big>)</big><a class="headerlink" href="#awesim.Simulation.get_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a numpy array with the value(s) of &#8216;name&#8217;</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.postprocess">
+<tt class="descname">postprocess</tt><big>(</big><em>process</em><big>)</big><a class="headerlink" href="#awesim.Simulation.postprocess" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary with results as defined in process</p>
+<p>A difference is made between single line assignments (x = ...) 
+and multiline statements (if ...).  
+Therefore, the pp string can be multiline,
+and multistatements.  The distinction is made based on the second item
+after doing a pp.split(&#8216; &#8216;):</p>
+<blockquote>
+<div><ul>
+<li><p class="first">if it is a &#8216;=&#8217;, the pp-string is an assignement and is processed 
+like that</p>
+</li>
+<li><p class="first">else, a different syntax is applied cause the spaces in the 
+multiline expression can be of syntactic importance.  
+I still have to develop this, and the point that I didn&#8217;t solve 
+yet is the attribution of the result.  If you have a string like
+if a&gt;0:</p>
+<blockquote>
+<div><p>b=1</p>
+</div></blockquote>
+<dl class="docutils">
+<dt>else:</dt>
+<dd><p class="first last">b=2</p>
+</dd>
+</dl>
+<p>you have to check each line, replace a and b with their full names
+(in case of mothers) and recompose the multiline string with the 
+same spaces. Surrounding each variable name with eg &#8216;$&#8217; could be
+a good solution.</p>
+</li>
+</ul>
+</div></blockquote>
+<p>the multline thing is not implemented yet.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simulation.separate">
+<tt class="descname">separate</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simulation.separate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Separates variables from parameters and adds 2 lists and 1 numpy array 
+as attributes:</p>
+<blockquote>
+<div><ul class="simple">
+<li>list parameters (sorted)</li>
+<li>list variables (sorted)</li>
+<li>numpy array parametervalues</li>
+</ul>
+</div></blockquote>
+<p>This method returns True if successfull</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="class-process">
+<h2>Class Process<a class="headerlink" href="#class-process" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="awesim.Process">
+<em class="property">class </em><tt class="descclassname">awesim.</tt><tt class="descname">Process</tt><big>(</big><em>mothers=None</em>, <em>parameters=None</em>, <em>sub_pars=None</em>, <em>variables=None</em>, <em>sub_vars=None</em>, <em>pp=None</em>, <em>integrate=None</em><big>)</big><a class="headerlink" href="#awesim.Process" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class defining pre- and post processing of a simulation</p>
+<p>The variable &#8216;Time&#8217; is automatically created</p>
+<p>This documentation needs completion, mainly the __init__() method</p>
+<dl class="method">
+<dt id="awesim.Process.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>mothers=None</em>, <em>parameters=None</em>, <em>sub_pars=None</em>, <em>variables=None</em>, <em>sub_vars=None</em>, <em>pp=None</em>, <em>integrate=None</em><big>)</big><a class="headerlink" href="#awesim.Process.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate the Process object</p>
+<ul>
+<li><p class="first">mothers: a list of mothers objects, as strings.  Arrays are supported
+in that case the &#8216;[&#8216; will be converted into &#8216;_&#8217; and the ] will be 
+removed.  Example d[1] becomes d_1.  In combination with a sub_par
+or sub_var, the . will be replaced by a &#8216;_&#8217;.  
+So the shortname for d[12].TSto will be d_12_TSto</p>
+</li>
+<li><p class="first">parameters: a dictionary with shortname:longname pairs for parameters.
+The shortnames can be used in postprocessing formulas (see pp)</p>
+</li>
+<li><p class="first">sub_pars: a dictionary with shortname:longname pairs for parameters 
+that are children of the mothers.  
+Example: if you have a c1.TInitialValue and a c2.TInitialValue, 
+you can have mothers = [&#8216;c1&#8217;, c2&#8217;] and 
+sub_vars = {&#8216;TStart&#8217;: &#8216;TInitialValue&#8217;}</p>
+</li>
+<li><p class="first">variables: analoguous to parameters</p>
+</li>
+<li><p class="first">sub_vars: analoguous to sub_pars</p>
+</li>
+<li><p class="first">pp: a list of post-processing strings.  Each string will be executed
+and will generate a new variable that will be stored and that can be
+used in following post porcessing strings. If the variable names used
+in a pp string are sub_vars or sub_pars, the string will be executed
+for each mother.</p>
+<p>It is crucial to surround the names of variables by spaces so they can be
+looked up in the parameters and variables dictionaries.</p>
+</li>
+<li><p class="first">integrate: dictionary with variables to be integrated over time.  
+The dictionary has shortname:scaling pairs, the scaling factor will
+be multiplied to the result of np.trapz(shortname, time).  The 
+resulting value will be stored under shortname_Int.  If the shortname
+is a sub_var, the integration will be done for every mother.</p>
+<p>Example: mothers = [&#8216;c1&#8217;, c2&#8217;], sub_vars = {&#8216;Q&#8217;:&#8217;Q_flow&#8217;}, 
+integrate = {&#8216;Q&#8217;:1e-6} will create c1_Q_Int and c2_Q_Int.</p>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Process.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Process.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a print string</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="awesim.Process.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#awesim.Process.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="class-simdex">
+<h2>Class Simdex<a class="headerlink" href="#class-simdex" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="awesim.Simdex">
+<em class="property">class </em><tt class="descclassname">awesim.</tt><tt class="descname">Simdex</tt><big>(</big><em>folder=''</em>, <em>h5='simdex.h5'</em>, <em>process=None</em>, <em>verbose=False</em><big>)</big><a class="headerlink" href="#awesim.Simdex" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Simdex object is an index of all the parameters, variables and 
+post-processing results in several .mat files.  
+It is used to treat different result files with a single or different 
+Process objects and keep the full processed results.
+Methods for easy filtering of the set of simulations are provided.</p>
+<p>The variables are stored in an h5 file.  Parameters are only stored locally
+in the attributes of the simdex object. When a filter is applied to a
+simdex, the resulting subset of simulations uses the same h5 file, so 
+there is no unnecessary copying of big files on the hard drive.</p>
+<dl class="docutils">
+<dt>Overview of most important attributes :</dt>
+<dd><ul class="first last simple">
+<li>self.simulations: a list with unique ID&#8217;s (SID) of the simulations</li>
+<li>self.parameters: a list of all parameters in the set of simulations.
+The parameters are listed here with their FULL names</li>
+<li>self.parametermap: numpy array mapping which simulation has 
+which parameters</li>
+<li>self.parametervalues: numpy array containing the values of the 
+mapped parameters</li>
+<li>self.variables: a list of all variables in the set of simulations. 
+The variables are listed here with their FULL names.</li>
+<li>self.variablemap: numpy array mapping which simulation has 
+which variables</li>
+<li>self.filterset: dictionary tracking all executed filter options on 
+the current set</li>
+<li>self.vardic (optional): a mapping of shortname:longname pairs for 
+variables</li>
+<li>self.pardic (optional) a mapping of shortname:longname pairs for 
+parameters</li>
+<li>self.simulations: list of the SID</li>
+<li>self.files: dictionary with SID:filename pairs</li>
+<li>self.identifiers: optional dictionary with short meaningful identifiers
+for the simulations.  Is used as legend in plots by default (unless 
+empty).</li>
+</ul>
+</dd>
+</dl>
+<p>Most important methods (* = implemented):</p>
+<ul class="simple">
+<li>__init__(folder): create simdex based from all .mat simulation files 
+in the current folder</li>
+</ul>
+<ul class="simple">
+<li>update(folderlist): update simdex with all .mat files found in a list of 
+folders. Checks if the found files are already in simulations, else they 
+are added and their parameters and ALL attributes are updated with the 
+info found in the new files</li>
+</ul>
+<ul class="simple">
+<li>remove(sim_id): remove a simulation from the simdex</li>
+<li>print(): gives a nice overview of the indexed simulations</li>
+<li>filter(dictionary): this method takes as input a dictionary with parameter 
+name/value pairs.   It returns a new Simdex object with those simulations
+that have exactly the same values for those parameters.  
+If a parameter is asked with &#8216;*&#8217; as value, all simulations that HAVE 
+the parameter are selected.</li>
+<li>getidentical(sim_id):  this method takes as input a simulation number and 
+returns a new simdex object all simulations with identical parameter set 
+(so all variants of the model with only changed parameter values).</li>
+<li>exist(re): similar to Simulation.exist method. Give a search string as re 
+(regular expression) and you get a list of all parameters and variables 
+that satisfy the re.</li>
+<li>plot(var): directly create a plot showing the given var for each of the 
+simulations in self.</li>
+</ul>
+<ul class="simple">
+<li>get_values(var or par): get an array with the values of the variable or
+parameter for each of the simulations in the simdex</li>
+</ul>
+<ul class="simple">
+<li>get_parameter(par): to be merged in get_values!!</li>
+</ul>
+<ul class="simple">
+<li>save(filename): saves the simdex by pickling (cPickle) to filename.  The 
+simdex can be loaded later on with the function load_simdex(filename)</li>
+</ul>
+<p>FEATURES:
+- all found .mat files are tested.  If they to not have the structure of</p>
+<blockquote>
+<div>a dymola simulation result, they are not indexed</div></blockquote>
+<dl class="docutils">
+<dt>Important CONVENTIONS:</dt>
+<dd><ul class="first last simple">
+<li>we make a distinction between parameters (one single value)
+and variables (a timeseries of values)</li>
+<li>simulation identity (SID) is a string with format SIDxxxx</li>
+</ul>
+</dd>
+</dl>
+<p>Possible IMPROVEMENTS:
+- multi folder file search
+- support multiple filter (well, it&#8217;s possible, but the filtersets will</p>
+<blockquote>
+<div>become a bit messed up (last filterset overwrites existing filterset if 
+it has the same keys)</div></blockquote>
+<dl class="method">
+<dt id="awesim.Simdex._Simdex__get_files">
+<tt class="descname">_Simdex__get_files</tt><big>(</big><em>directory</em>, <em>non_wildcard_pattern</em><big>)</big><a class="headerlink" href="#awesim.Simdex._Simdex__get_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function returns a list of filenames as strings, satisfying the 
+nonWildCardPattern</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>folder=''</em>, <em>h5='simdex.h5'</em>, <em>process=None</em>, <em>verbose=False</em><big>)</big><a class="headerlink" href="#awesim.Simdex.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Simdex object.</p>
+<p>Folder is a single folder to be sought for .mat files
+If folder = &#8216;&#8217;, no work directory is indexed.</p>
+<p>h5 is the hdf5 file to which this simdex will be linked.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simdex.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints the Simdex object as a list of the indexed simulations
+with their simID&#8217;s</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex._gen_key">
+<tt class="descname">_gen_key</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simdex._gen_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a new key, based on last key</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex._get_par">
+<tt class="descname">_get_par</tt><big>(</big><em>parameter</em><big>)</big><a class="headerlink" href="#awesim.Simdex._get_par" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary with SID:parametervalue pairs</p>
+<p>This is a private method.  You should use get()
+parameter = string with exact (long) parameter name.</p>
+<p>If a simulation does NOT have the parameter, the value in 
+the dictionary is None</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex._get_var_h5">
+<tt class="descname">_get_var_h5</tt><big>(</big><em>var</em>, <em>selection=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#awesim.Simdex._get_var_h5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get values of variables that are stored in the h5 file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex._last_key">
+<tt class="descname">_last_key</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simdex._last_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the last key from the pytables file, or &#8216;&#8217; if empty file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.apply">
+<tt class="descname">apply</tt><big>(</big><em>function_call</em><big>)</big><a class="headerlink" href="#awesim.Simdex.apply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply the function_call to each variable in each simulation.
+E.g, if the simdex contains a variable called QHeat as a timeseries,
+you can use this method like this to compute the total integrated QHeat
+for each of the simulations:</p>
+<blockquote>
+<div>simdex.apply(np.trapz(QHeat, time))</div></blockquote>
+<p>Returns a dictionary with SID/result pairs</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.cleanup">
+<tt class="descname">cleanup</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simdex.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes unused parameters, variables and filenamesfrom a simdex</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.exist">
+<tt class="descname">exist</tt><big>(</big><em>regex</em>, <em>tp='all'</em><big>)</big><a class="headerlink" href="#awesim.Simdex.exist" title="Permalink to this definition">¶</a></dt>
+<dd><p>exist(regex, tp=&#8217;all&#8217;)</p>
+<p>regex = regular expression
+tp = &#8216;all&#8217; (default), &#8216;par&#8217; or &#8216;var&#8217;</p>
+<p>This function checks if a variable name exists in the index.
+In all cases, it returns a list.
+If tp = &#8216;all&#8217; this list contains 2 lists of strings:</p>
+<blockquote>
+<div>the first with all parameters that satisfy the regex, 
+the second with variables that satisfy regex</div></blockquote>
+<p>If tp = &#8216;par&#8217; or &#8216;var&#8217; the return list only contains 
+the corresponding list.</p>
+<p>Attention: if you want to check if eg.  c[3].T exists, you have to 
+escape the [ and ] with a backslash, like this:
+self.exist(&#8216;c[3].T). Otherwise c3.T is sought for. This is 
+because in regex syntax, [] is used to indicate a set of characters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.filter">
+<tt class="descname">filter</tt><big>(</big><em>pardic</em><big>)</big><a class="headerlink" href="#awesim.Simdex.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new simdex, filtered with the criteria as in pardic</p>
+<p>pardic is a dictionary of parameter:value pairs
+If a value is omitted (empty string), all simulations that have any 
+value for this parameter are fine</p>
+<p>Get all simulations that satisfy pardic (AND relation) and 
+return them as a new Simdex object</p>
+<p>Attention: a tolerance is defined internally in this method to enable
+filtering with floats.  The tolerance is currently set to 0.5%</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.filter_remove">
+<tt class="descname">filter_remove</tt><big>(</big><em>selection</em><big>)</big><a class="headerlink" href="#awesim.Simdex.filter_remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new simdex without the SID&#8217;s in selection.</p>
+<p>selection is a list with &#8216;SIDxxxx&#8217; strings.
+It DOES NOT have to be in the right order.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.filter_selection">
+<tt class="descname">filter_selection</tt><big>(</big><em>selection</em><big>)</big><a class="headerlink" href="#awesim.Simdex.filter_selection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new simdex containing only the SID&#8217;s in selection.</p>
+<p>selection is a list with &#8216;SIDxxxx&#8217; strings.
+It DOES NOT have to be in the right order.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.filter_similar">
+<tt class="descname">filter_similar</tt><big>(</big><em>SID</em><big>)</big><a class="headerlink" href="#awesim.Simdex.filter_similar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new simdex with similar simulations as SID (SIDxxxx)</p>
+<p>Create a new Simdex object from self with only those simulations 
+that have identical parameter and variable lists as SID.  This means
+that we suppose the model is identical, but some parameters may have 
+a different value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.get">
+<tt class="descname">get</tt><big>(</big><em>name</em>, <em>aggregate=None</em><big>)</big><a class="headerlink" href="#awesim.Simdex.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Result instance with SID:value pairs for par or var name</p>
+<p>If the name is a sub-variable, the corresponding variable for all
+mothers will be extracted and put in a single array according to aggregate.</p>
+<p>aggregate = None, &#8216;sum&#8217; or &#8216;mean&#8217; : if None, the values in the Result
+object will contain the trajectories for all variables.  
+If aggregate is &#8216;sum&#8217;, all trajectories are summed, if it is &#8216;mean&#8217;, 
+the mean value of all trajectories is computed.</p>
+<p>If name is a parameter and a simulation does NOT have the parameter, 
+the value in the result object is None.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.get_SID">
+<tt class="descname">get_SID</tt><big>(</big><em>regex</em><big>)</big><a class="headerlink" href="#awesim.Simdex.get_SID" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list with SID&#8217;s for a given search expression (regex)</p>
+<p>regex = regular expression, not case sensitive</p>
+<p>Return a list of simulations (SID) of which the filenames match the regex</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.get_filenames">
+<tt class="descname">get_filenames</tt><big>(</big><em>form='filename'</em><big>)</big><a class="headerlink" href="#awesim.Simdex.get_filenames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of the filenames</p>
+<p>form = &#8216;filename&#8217; (default): only the filenames
+form = &#8216;path&#8217; : full path name</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.index_one_sim">
+<tt class="descname">index_one_sim</tt><big>(</big><em>simulation</em>, <em>process=None</em><big>)</big><a class="headerlink" href="#awesim.Simdex.index_one_sim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a Simulation instanct to a Simdex instance</p>
+<p>This method indexes a single simulation into the simdex.  All simdex
+attributes are updated, and the h5 file is completed with the variables
+defined in process.variables AND with the results of the postprocessing
+as defined in process.pp</p>
+<p>simulation has to be a Simulation object
+process is a simman.Process object</p>
+<p>Convention: in the h5 file, the short names are used, but with any &#8216;.&#8217;
+replaced by &#8216;_dot_&#8217;.  The h5 file only contains variables, no parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.openh5">
+<tt class="descname">openh5</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simdex.openh5" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open the h5 file in append mode</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.plot">
+<tt class="descname">plot</tt><big>(</big><em>variable) - variable = string with variable name (short or long</em><big>)</big><a class="headerlink" href="#awesim.Simdex.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a matplotlib figure with a simple plot of the timeseries for 
+each of the simulations in self</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.postproc">
+<tt class="descname">postproc</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Simdex.postproc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the post-processing</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.save">
+<tt class="descname">save</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#awesim.Simdex.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the Simdex object by pickling it with cPickle</p>
+<dl class="docutils">
+<dt>To unpickle (= load) use the following command:</dt>
+<dd>objectname = pickle.load(open(filename,&#8217;rb&#8217;))
+# &#8216;rb&#8217; stands for &#8216;read, binary&#8217;</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.scan">
+<tt class="descname">scan</tt><big>(</big><em>folder=''</em>, <em>process=None</em>, <em>timecheck=True</em><big>)</big><a class="headerlink" href="#awesim.Simdex.scan" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scan a folder for .mat files and add them to the simdex</p>
+<ul class="simple">
+<li>folder: a single folder to be sought for .mat files
+If folder == &#8216;&#8217;, the current work directory is indexed</li>
+<li>process: a post-processing to be applied to each mat file</li>
+<li>timecheck: if True, verify that all indexed simulations have the 
+same start and stop times.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Simdex.scatterplot">
+<tt class="descname">scatterplot</tt><big>(</big><em>X</em>, <em>Y</em><big>)</big><a class="headerlink" href="#awesim.Simdex.scatterplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a matplotlib figure with a simple plot of Y versus X for 
+each of the simulations in self</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="class-result">
+<h2>Class Result<a class="headerlink" href="#class-result" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="awesim.Result">
+<em class="property">class </em><tt class="descclassname">awesim.</tt><tt class="descname">Result</tt><big>(</big><em>values</em>, <em>time=None</em>, <em>identifiers=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#awesim.Result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class containing the result for one single variable but for different 
+simulations.  An instance from this class is returned from Simdex.get()</p>
+<p>This class also contains the plot functionality and methods to apply 
+basic operations and functions to it.</p>
+<dl class="method">
+<dt id="awesim.Result.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>values</em>, <em>time=None</em>, <em>identifiers=None</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#awesim.Result.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a Result object.</p>
+<p>values = dictionary {sid:values}
+time (optional) = dictionary {sid:time}
+identifiers (optional) = dictionary {sid:identifier}
+<a href="#id2"><span class="problematic" id="id3">**</span></a>kwargs are converted into attributes.  This is useful to pass eg. the 
+year for the data (use for example year=2010)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="awesim.Result.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#awesim.Result.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.aggregate">
+<tt class="descname">aggregate</tt><big>(</big><em>period=86400</em>, <em>interval=3600</em>, <em>label='middle'</em><big>)</big><a class="headerlink" href="#awesim.Result.aggregate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the aggregated average of the timeseries by 
+period (typical a day) in bins of interval seconds (default = 3600s).</p>
+<p>label = &#8216;left&#8217;, &#8216;middle&#8217; or &#8216;right&#8217;.  
+&#8216;Left&#8217; means that the label i contains data from 
+i till i+1, &#8216;right&#8217; means that label i contains data from i-1 till i.</p>
+<p>Returns a dataframe with period/interval values, one for each interval
+of the period.</p>
+<dl class="docutils">
+<dt>A few limitations of the method:</dt>
+<dd><ul class="first last simple">
+<li>the period has to be a multiple of the interval</li>
+<li>for correct results, the timespan of the timeseries has to be a 
+multiple of the period</li>
+</ul>
+</dd>
+</dl>
+<p>Example of usefulness: if the timeseries has 15-minute values for 1 year of
+eg. the electricity consumption of a building.  
+- You want to know how a typical daily profile looks like, by 15 minutes</p>
+<blockquote>
+<div>==&gt; period=86400, interval=900</div></blockquote>
+<ul class="simple">
+<li>you want to know how a typical weekly profile looks like, by hour:
+==&gt; period = 7*86400, interval=3600</li>
+</ul>
+<dl class="docutils">
+<dt>Changelog:</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>20121113: split the method because to_dataframe() does NOT </dt>
+<dd><p class="first last">work with events if there are multiple sid&#8217;s in the
+result.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.plot">
+<tt class="descname">plot</tt><big>(</big><em>ylabel=None</em><big>)</big><a class="headerlink" href="#awesim.Result.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a matplotlib figure with a simple plot of the timeseries for 
+each of the simulations in self.val</p>
+<p>A string can be passed (ylabel) that will be used to label the y-axis</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.save">
+<tt class="descname">save</tt><big>(</big><em>filename</em><big>)</big><a class="headerlink" href="#awesim.Result.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the Simdex object by pickling it with cPickle</p>
+<dl class="docutils">
+<dt>To unpickle (= load) use the following command:</dt>
+<dd>objectname = pickle.load(open(filename,&#8217;rb&#8217;))
+# &#8216;rb&#8217; stands for &#8216;read, binary&#8217;</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.smooth">
+<tt class="descname">smooth</tt><big>(</big><em>interval=300</em><big>)</big><a class="headerlink" href="#awesim.Result.smooth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the running average of a timeseries</p>
+<p>interval: interval for the running average, in seconds (default = 300s)</p>
+<p>returns a result object with smoothened values and adapted time</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.to_dataframe">
+<tt class="descname">to_dataframe</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Result.to_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a pandas dataframe from this result
+Attention: this method does NOT work if res contains multiple
+SID&#8217;s who contain events (duplicate index values).  
+This case is roughly detected by checking the resulting df length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.trapz">
+<tt class="descname">trapz</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Result.trapz" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrate the values(time) using the composite trapezoidal rule
+Returns an array with the integrated values, in sorted order</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="awesim.Result.values">
+<tt class="descname">values</tt><big>(</big><big>)</big><a class="headerlink" href="#awesim.Result.values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list with as elements, the values of the variable in the order 
+of the sid&#8217;s</p>
+<p>It does not seem a good idea to return an array by default, cause the 
+variables for different SID&#8217;s can have different lengths. 
+Exception: when the length of each of the variables is 1, a reshaped 
+array is returned.</p>
+<p>If a value in a single length array is None, it is replaced by NaN in the
+returned array.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Class overview</a><ul>
+<li><a class="reference internal" href="#class-simulation">Class Simulation</a></li>
+<li><a class="reference internal" href="#class-process">Class Process</a></li>
+<li><a class="reference internal" href="#class-simdex">Class Simdex</a></li>
+<li><a class="reference internal" href="#class-result">Class Result</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="process.html"
+                        title="previous chapter">Defining a post-process</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/class_overview.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="process.html" title="Defining a post-process"
+             >previous</a> |</li>
+        <li><a href="index.html">awesim 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Roel De Coninck, Ruben Baetens.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

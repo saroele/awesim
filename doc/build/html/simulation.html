@@ -1,0 +1,322 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Working with single simulations &mdash; awesim 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="awesim 0.1 documentation" href="index.html" />
+    <link rel="next" title="Defining a post-process" href="process.html" />
+    <link rel="prev" title="awesim" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="process.html" title="Defining a post-process"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="awesim"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">awesim 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="working-with-single-simulations">
+<span id="simulation"></span><h1>Working with single simulations<a class="headerlink" href="#working-with-single-simulations" title="Permalink to this headline">¶</a></h1>
+<p>To get started, we&#8217;ll always use the following import statements</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [12]: </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="gp">In [13]: </span><span class="kn">from</span> <span class="nn">awesim</span> <span class="kn">import</span> <span class="n">Simulation</span>
+</pre></div>
+</div>
+<p>Suppose we have a simulation result file called &#8216;LinkedCapacities.mat&#8217;.
+We can instantiate a :class:&#8217;~awesim.Simulation&#8217; object from this file.</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [14]: </span><span class="n">sim</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="s">&#39;LinkedCapacities&#39;</span><span class="p">)</span> <span class="c">#with our without .mat extension</span>
+
+<span class="gp">In [15]: </span><span class="k">print</span> <span class="n">sim</span>
+<span class="go">/home/roel/data/work/awesim/tests/LinkedCapacities</span>
+<span class="go">/home/roel/data/work/awesim/tests/LinkedCapacities</span>
+</pre></div>
+</div>
+<p>When instantiating a Simulation object, the .mat file is read in memory.
+The filename is stored as an attribute.</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [16]: </span><span class="n">sim</span><span class="o">.</span><span class="n">filename</span>
+<span class="gr">Out[16]: </span><span class="s">&#39;/home/roel/data/work/awesim/tests/LinkedCapacities&#39;</span>
+</pre></div>
+</div>
+<p>A simulation object can be introspected in different ways.  A list of all
+known parameters and variables can be obtained.  For large simulations, the method <tt class="docutils literal"><span class="pre">get_objects()</span></tt> will be more practical.  It lists all the sub-objects from a given parent.  The simulation root will be taken if no parent is given.
+.. ipython:: python</p>
+<blockquote>
+<div>sim.names
+sim.get_objects()
+sim.get_objects(&#8216;C1&#8217;)</div></blockquote>
+<p>The list of known names can be split in parameters and variables with the method <tt class="docutils literal"><span class="pre">separate()</span></tt>.
+This will create three attributes:</p>
+<ol class="arabic simple">
+<li><tt class="docutils literal"><span class="pre">Simulation.variables</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">Simulation.parameters</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">Simulation.parametervalues</span></tt></li>
+</ol>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [17]: </span><span class="n">sim</span><span class="o">.</span><span class="n">separate</span><span class="p">()</span>
+<span class="gr">Out[17]: </span><span class="bp">True</span>
+
+<span class="gp">In [18]: </span><span class="n">sim</span><span class="o">.</span><span class="n">variables</span>
+<span class="gr">Out[18]: </span>
+<span class="go">[u&#39;Time&#39;,</span>
+<span class="go"> u&#39;c1.T&#39;,</span>
+<span class="go"> u&#39;c1.der(T)&#39;,</span>
+<span class="go"> u&#39;c1.heatPort.Q_flow&#39;,</span>
+<span class="go"> u&#39;c1.heatPort.T&#39;,</span>
+<span class="go"> u&#39;c2.T&#39;,</span>
+<span class="go"> u&#39;c2.der(T)&#39;,</span>
+<span class="go"> u&#39;c2.heatPort.Q_flow&#39;,</span>
+<span class="go"> u&#39;c2.heatPort.T&#39;,</span>
+<span class="go"> u&#39;r.heatPort_a.Q_flow&#39;,</span>
+<span class="go"> u&#39;r.heatPort_a.T&#39;,</span>
+<span class="go"> u&#39;r.heatPort_b.Q_flow&#39;,</span>
+<span class="go"> u&#39;r.heatPort_b.T&#39;]</span>
+
+<span class="gp">In [19]: </span><span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sim</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">sim</span><span class="o">.</span><span class="n">parametervalues</span><span class="p">):</span>
+<span class="gp">   ....:</span>     <span class="k">print</span> <span class="n">p</span><span class="p">,</span> <span class="s">&#39; = &#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+<span class="gp">   ....:</span>
+<span class="go">c1.C  =  600.0</span>
+<span class="go">c2.C  =  1000.0</span>
+<span class="go">r.R  =  3.0</span>
+</pre></div>
+</div>
+<p>A search method is foreseen: <tt class="docutils literal"><span class="pre">Simulation.exist()</span></tt>.  It will return a list of all names that satisfy the search criterium.  You can even use regular expressions in your search.</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [20]: </span><span class="n">sim</span><span class="o">.</span><span class="n">exist</span><span class="p">(</span><span class="s">&#39;q_flow&#39;</span><span class="p">)</span>
+<span class="gr">Out[20]: </span>
+<span class="go">[u&#39;c1.heatPort.Q_flow&#39;,</span>
+<span class="go"> u&#39;c2.heatPort.Q_flow&#39;,</span>
+<span class="go"> u&#39;r.heatPort_a.Q_flow&#39;,</span>
+<span class="go"> u&#39;r.heatPort_b.Q_flow&#39;]</span>
+</pre></div>
+</div>
+<p>There are two methods to obtain the values.  The first one is <tt class="docutils literal"><span class="pre">Simulation.get_value()</span></tt>.  This method will return a numpy.float for paramters and a numpy.array for trajectories (variables).</p>
+<blockquote>
+<div>Note: the simulation time is always accessible through &#8216;Time&#8217;</div></blockquote>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [21]: </span><span class="n">time</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s">&#39;Time&#39;</span><span class="p">)</span>
+
+<span class="gp">In [22]: </span><span class="n">Q</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s">u&#39;r.heatPort_a.Q_flow&#39;</span><span class="p">)</span>
+
+<span class="gp">In [23]: </span><span class="n">Q_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+
+<span class="gp">In [24]: </span><span class="k">print</span> <span class="s">&quot;The total energy that flowed through the resistance is </span><span class="si">%.1f</span><span class="s"> J&quot;</span> <span class="o">%</span><span class="n">Q_sum</span>
+<span class="go">The total energy that flowed through the resistance is 18804.0 J</span>
+</pre></div>
+</div>
+<p>The second method is <tt class="docutils literal"><span class="pre">Simulation.extract()</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">arrays</span><span class="o">=</span><span class="s">&#39;sum&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return dictionary with values of the variables/parameters to extract.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>extract() takes a dictionary as input argument, and will return a dictionary of the same length with the same keys.  The variable or parameter names will be replaced with their values.</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [25]: </span><span class="n">sim</span><span class="o">.</span><span class="n">extract</span><span class="p">({</span><span class="s">&#39;c1&#39;</span><span class="p">:</span> <span class="s">&#39;c1.C&#39;</span><span class="p">,</span> <span class="s">&#39;T1&#39;</span><span class="p">:</span> <span class="s">&#39;c1.T&#39;</span><span class="p">,</span> <span class="s">&#39;Q1&#39;</span><span class="p">:</span><span class="s">&#39;c1.heatPort.Q_flow&#39;</span><span class="p">})</span>
+<span class="gr">Out[25]: </span>
+<span class="go">{&#39;Q1&#39;: array([-16.67, -13.95, -11.67,  -9.77,  -8.18,  -6.85,  -5.73,  -4.8 ,</span>
+<span class="go">        -4.02,  -3.37,  -2.82,  -2.36,  -1.98,  -1.66,  -1.39,  -1.16,</span>
+<span class="go">        -0.97,  -0.81,  -0.67,  -0.56,  -0.47,  -0.4 ,  -0.33,  -0.28,</span>
+<span class="go">        -0.24,  -0.2 ,  -0.17,  -0.14,  -0.12,  -0.1 ,  -0.09,  -0.07,</span>
+<span class="go">        -0.06,  -0.05,  -0.04,  -0.04,  -0.03,  -0.02,  -0.02,  -0.02,</span>
+<span class="go">        -0.01,  -0.01,  -0.01,  -0.01,  -0.01,  -0.  ,  -0.  ,  -0.  ,</span>
+<span class="go">        -0.  ,  -0.  ,  -0.  ], dtype=float32),</span>
+<span class="go"> &#39;T1&#39;: array([ 400.  ,  394.91,  390.63,  387.06,  384.08,  381.59,  379.5 ,</span>
+<span class="go">        377.76,  376.3 ,  375.07,  374.04,  373.18,  372.46,  371.86,</span>
+<span class="go">        371.35,  370.92,  370.57,  370.27,  370.02,  369.81,  369.64,</span>
+<span class="go">        369.5 ,  369.38,  369.28,  369.2 ,  369.13,  369.07,  369.02,</span>
+<span class="go">        368.97,  368.94,  368.91,  368.88,  368.86,  368.84,  368.83,</span>
+<span class="go">        368.82,  368.81,  368.8 ,  368.79,  368.78,  368.78,  368.77,</span>
+<span class="go">        368.77,  368.76,  368.76,  368.76,  368.76,  368.75,  368.75,</span>
+<span class="go">        368.75,  368.75], dtype=float32),</span>
+<span class="go"> &#39;c1&#39;: array([ 600.])}</span>
+</pre></div>
+</div>
+<p>If you want to extract an array of variables, just replace the index (between the []) by &#8216;x&#8217;.
+There are three possible options for the processing of arrays:</p>
+<ol class="arabic simple">
+<li>arrays=&#8217;each&#8217;: return each of the arrays</li>
+<li>arrays=&#8217;sum&#8217;: return the sum (default)</li>
+<li>arrays=&#8217;mean&#8217;: return the mean</li>
+</ol>
+<p>Here&#8217;s an example of a simulation result file that contains arrays.</p>
+<div class="highlight-ipython"><div class="highlight"><pre><span class="gp">In [26]: </span><span class="n">sim</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="s">&#39;Array.mat&#39;</span><span class="p">)</span>
+
+<span class="gp">In [27]: </span><span class="n">sim</span><span class="o">.</span><span class="n">get_objects</span><span class="p">()</span>
+<span class="gr">Out[27]: </span>
+<span class="go">[u&#39;c[1]&#39;,</span>
+<span class="go"> u&#39;c[2]&#39;,</span>
+<span class="go"> u&#39;c[3]&#39;,</span>
+<span class="go"> u&#39;c[4]&#39;,</span>
+<span class="go"> u&#39;r[1]&#39;,</span>
+<span class="go"> u&#39;r[2]&#39;,</span>
+<span class="go"> u&#39;r[3]&#39;,</span>
+<span class="go"> u&#39;r[4]&#39;,</span>
+<span class="go"> u&#39;Tstarts[1]&#39;,</span>
+<span class="go"> u&#39;Tstarts[2]&#39;,</span>
+<span class="go"> u&#39;Tstarts[3]&#39;,</span>
+<span class="go"> u&#39;Tstarts[4]&#39;,</span>
+<span class="go"> u&#39;cvalues[1]&#39;,</span>
+<span class="go"> u&#39;cvalues[2]&#39;,</span>
+<span class="go"> u&#39;cvalues[3]&#39;,</span>
+<span class="go"> u&#39;cvalues[4]&#39;,</span>
+<span class="go"> u&#39;n&#39;]</span>
+
+<span class="gp">In [28]: </span><span class="n">sim</span><span class="o">.</span><span class="n">extract</span><span class="p">({</span><span class="s">&#39;T_array&#39;</span><span class="p">:</span> <span class="s">&#39;c[x].T&#39;</span><span class="p">},</span> <span class="n">arrays</span><span class="o">=</span><span class="s">&#39;each&#39;</span><span class="p">)</span>
+<span class="gr">Out[28]: </span>
+<span class="go">{&#39;T_array&#39;: array([[ 500.  ,  350.  ,  600.  ,  200.  ],</span>
+<span class="go">       [ 473.91,  360.53,  524.36,  258.98],</span>
+<span class="go">       [ 453.38,  367.96,  475.99,  299.36],</span>
+<span class="go">       [ 437.46,  373.27,  444.96,  327.11],</span>
+<span class="go">       [ 425.26,  377.11,  425.05,  346.19],</span>
+<span class="go">       [ 415.98,  379.91,  412.25,  359.34],</span>
+<span class="go">       [ 408.98,  381.98,  403.99,  368.39],</span>
+<span class="go">       [ 403.73,  383.51,  398.67,  374.64],</span>
+<span class="go">       [ 399.8 ,  384.66,  395.22,  378.95],</span>
+<span class="go">       [ 396.87,  385.54,  392.96,  381.93],</span>
+<span class="go">       [ 394.7 ,  386.2 ,  391.47,  383.99],</span>
+<span class="go">       [ 393.08,  386.71,  390.5 ,  385.41],</span>
+<span class="go">       [ 391.88,  387.1 ,  389.86,  386.39],</span>
+<span class="go">       [ 391.  ,  387.4 ,  389.42,  387.06],</span>
+<span class="go">       [ 390.34,  387.63,  389.13,  387.52],</span>
+<span class="go">       [ 389.86,  387.81,  388.93,  387.83],</span>
+<span class="go">       [ 389.5 ,  387.95,  388.8 ,  388.05],</span>
+<span class="go">       [ 389.23,  388.06,  388.71,  388.19],</span>
+<span class="go">       [ 389.04,  388.15,  388.66,  388.28],</span>
+<span class="go">       [ 388.89,  388.22,  388.61,  388.35],</span>
+<span class="go">       [ 388.78,  388.27,  388.57,  388.39],</span>
+<span class="go">       [ 388.7 ,  388.31,  388.55,  388.42],</span>
+<span class="go">       [ 388.64,  388.34,  388.52,  388.44],</span>
+<span class="go">       [ 388.59,  388.37,  388.51,  388.45],</span>
+<span class="go">       [ 388.56,  388.39,  388.5 ,  388.46],</span>
+<span class="go">       [ 388.53,  388.41,  388.49,  388.47],</span>
+<span class="go">       [ 388.51,  388.42,  388.48,  388.47],</span>
+<span class="go">       [ 388.5 ,  388.43,  388.48,  388.47],</span>
+<span class="go">       [ 388.49,  388.44,  388.47,  388.47],</span>
+<span class="go">       [ 388.48,  388.44,  388.47,  388.47],</span>
+<span class="go">       [ 388.48,  388.45,  388.47,  388.47],</span>
+<span class="go">       [ 388.47,  388.45,  388.47,  388.47],</span>
+<span class="go">       [ 388.47,  388.45,  388.47,  388.46],</span>
+<span class="go">       [ 388.47,  388.45,  388.47,  388.46],</span>
+<span class="go">       [ 388.47,  388.45,  388.46,  388.46],</span>
+<span class="go">       [ 388.47,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.47,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.47,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.47,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46],</span>
+<span class="go">       [ 388.46,  388.46,  388.46,  388.46]], dtype=float32)}</span>
+
+<span class="gp">In [29]: </span><span class="n">sim</span><span class="o">.</span><span class="n">extract</span><span class="p">({</span><span class="s">&#39;T_array&#39;</span><span class="p">:</span> <span class="s">&#39;c[x].T&#39;</span><span class="p">},</span> <span class="n">arrays</span><span class="o">=</span><span class="s">&#39;mean&#39;</span><span class="p">)</span>
+<span class="gr">Out[29]: </span>
+<span class="go">{&#39;T_array&#39;: array([ 412.5 ,  404.44,  399.17,  395.7 ,  393.4 ,  391.87,  390.84,</span>
+<span class="go">        390.14,  389.66,  389.32,  389.09,  388.92,  388.81,  388.72,</span>
+<span class="go">        388.66,  388.61,  388.57,  388.55,  388.53,  388.52,  388.5 ,</span>
+<span class="go">        388.49,  388.49,  388.48,  388.48,  388.47,  388.47,  388.47,</span>
+<span class="go">        388.47,  388.47,  388.46,  388.46,  388.46,  388.46,  388.46,</span>
+<span class="go">        388.46,  388.46,  388.46,  388.46,  388.46,  388.46,  388.46,</span>
+<span class="go">        388.46,  388.46,  388.46,  388.46,  388.46,  388.46,  388.46,</span>
+<span class="go">        388.46,  388.46], dtype=float32)}</span>
+</pre></div>
+</div>
+<p>There is one more method in the Simulation class: <tt class="docutils literal"><span class="pre">postprocess()</span></tt>.  This method is related to the Result class, it will be explained in the documentation of Result.</p>
+<p>At this moment, there is no automatic plotting method in Simulation.  The reason is that is is more convenient to work with the Simdex class, which has methods for plotting.  See the documentation of Simdex.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">awesim</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="process.html"
+                        title="next chapter">Defining a post-process</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/simulation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="process.html" title="Defining a post-process"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="awesim"
+             >previous</a> |</li>
+        <li><a href="index.html">awesim 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Roel De Coninck, Ruben Baetens.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
