@@ -17,7 +17,7 @@ To get started, we'll always use the following import statements
 .. ipython:: python
     
     import numpy as np
-    from simman.simman import Simulation
+    from awesim import Simulation
     
 .. ipython:: python
     :suppress:
@@ -25,7 +25,7 @@ To get started, we'll always use the following import statements
     np.set_printoptions(precision=2, suppress=True)
     
 Suppose we have a simulation result file called 'LinkedCapacities.mat'.
-We can instantiate a :class:'~simman.simman.Simulation' object from this file.
+We can instantiate a :class:'~awesim.Simulation' object from this file.
 
 .. ipython:: python
 

@@ -24,7 +24,7 @@ Post processing is often a time-intensive step in the simulation set-up.  To eas
 .. ipython:: python
     
     import numpy as np
-    from simman.simman import Simulation, Process
+    from awesim import Simulation, Process
     
 .. ipython:: python
     :suppress:

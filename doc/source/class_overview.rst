@@ -6,28 +6,28 @@ Class overview
 
 Class Simulation
 ****************    
-.. autoclass:: simman.simman.Simulation
+.. autoclass:: awesim.Simulation
    :members:
    :private-members:
    :special-members:
    
 Class Process
 ****************     
-.. autoclass:: simman.simman.Process
+.. autoclass:: awesim.Process
    :members:
    :private-members:
    :special-members:
    
 Class Simdex
 ****************     
-.. autoclass:: simman.simman.Simdex
+.. autoclass:: awesim.Simdex
    :members:
    :private-members:
    :special-members:
    
 Class Result
 ****************     
-.. autoclass:: simman.simman.Result
+.. autoclass:: awesim.Result
    :members:
    :private-members:
    :special-members:
