@@ -1251,5 +1251,5 @@ suite5 = unittest.TestLoader().loadTestsFromTestCase(UtilitiesTest)
 alltests = unittest.TestSuite([suite1, suite2, suite3, suite4, suite5])
 
 #unittest.TextTestRunner(verbosity=1, failfast=False).run(alltests)
-unittest.TextTestRunner(verbosity=1).run(suite3)
+unittest.TextTestRunner(verbosity=1).run(alltests)
 

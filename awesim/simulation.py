@@ -241,6 +241,10 @@ class Simulation:
         self.data_1 = data_1
         self.data_2 = data_2
         self.filename = filename
+        
+        self.separate()
+        
+        print '{} loaded.'.format(filename)
 
     def __str__(self):
         print self.filename

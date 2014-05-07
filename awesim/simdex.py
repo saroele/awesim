@@ -192,9 +192,10 @@ class Simdex:
         overwrite = 'y'        
         if os.path.exists(self.h5_path):
             print 'This file already exists: %s' % self.h5_path
-            overwrite = raw_input('Overwrite (Y/N)? : \n')
+            #overwrite = raw_input('Overwrite (Y/N)? : \n')
             print '\n'
-        
+            overwrite='y'
+            
         if overwrite == 'y' or overwrite == 'Y':
             self.h5 = tbl.openFile(self.h5_path, 'w', title='Simdex file')
             self.h5.close()
@@ -333,7 +334,8 @@ class Simdex:
                     
                     print 'The first found simulation, %s, runs from %d s till %d s' % \
                         (sim.filename, time[0],time[-1])
-                    timeOK = raw_input('Is this correct? y/n : ')
+                    #timeOK = raw_input('Is this correct? y/n : ')
+                    timeOK = 'y'
                     print '\n'
                     if timeOK == 'y' or timeOK == 'Y':
                         self.simulationstart = time[0]
@@ -1304,7 +1306,9 @@ class Simdex:
         """
         save(filename)
         
-        Save the Simdex object by pickling it with cPickle
+        Save the Simdex object by pickling it with cPickle.
+        The path to the h5 file is saved as relative path in order to avoid
+        problems when loading the simdex on another computer.
         
         
         To unpickle (= load) use the following command:
@@ -1318,6 +1322,8 @@ class Simdex:
         # saving
         
         del self.h5
+        old_h5 = copy.copy(self.h5_path)
+        self.h5_path = os.path.split(self.h5_path)[-1]
         #print 'self.h5 removed'
 
         f = file(filename,'wb')
@@ -1325,6 +1331,7 @@ class Simdex:
         pickle.dump(self, f)
         f.close()
         
+        self.h5_path = old_h5
         self.h5 = tbl.openFile(self.h5_path, 'a')
         self.h5.close()
         
@@ -1394,6 +1401,7 @@ def load_simdex(filename):
     """load and return a previously saved Simdex object"""
     
     result = pickle.load(open(filename,'rb'))
+    result.h5_path = os.path.abspath(result.h5_path)
     result.h5 = tbl.openFile(result.h5_path, 'a')
     result.h5.close()
     return result
