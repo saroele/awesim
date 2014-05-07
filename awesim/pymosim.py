@@ -408,6 +408,8 @@ def analyse_log(log_file):
             summary['int_order_max'] = line.split(' ')[-1]
         elif line.find('Number of rejected steps') > -1:
             summary['steps_nok'] = line.split(' ')[-1]
+        elif line.find('Number of Jacobian-evaluations') > -1:
+            summary['jacobians'] = line.split(' ')[-1].strip('\n')
         elif line.find('Integration started at 0 using integration method:') > -1:
             summary['algorithm'] = lines[line_number + 1].strip('\n')
         elif line.find('Integration started at T = 0 using integration method') > -1:
