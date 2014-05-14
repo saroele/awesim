@@ -63,6 +63,8 @@ def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
 
 def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     """
+    this function is not maintained, use set_pars please    
+    
     Change a parametervalue in an existing dsin.txt
     
     Parameters
@@ -72,6 +74,7 @@ def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     value: value to put for this parameter
     dsin: filename of the dsin.txt. 
     copy_to = filename of the resulting file, defaults to dsin
+    
     
     
     """
@@ -124,6 +127,73 @@ def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     
     print '%s found in %s: %s is replaced by %s' \
            % (parameter, dsin, old_value, value)
+
+
+def set_pars(pardic, dsin='dsin.txt', copy_to=None, check_auxiliary=False):
+    """
+    Change a all parameters in pardic in an existing dsin.txt
+    
+    Parameters
+    ----------
+    
+    pardic: dictionary with parameter:value pairs
+    dsin: filename of the dsin.txt. 
+    copy_to = filename of the resulting file, defaults to dsin
+    check_auxiliary : if True, check for auxiliary variables and raise error when 
+    trying to set their value
+    
+    """
+
+    orig_file = open(dsin, 'r')
+    lines = orig_file.readlines() # list of strings, each ending with '\n'
+    orig_file.close()
+    
+    for linenumber, s in enumerate(lines):
+        for par, val in pardic.iteritems():
+            par_dsin = '# '+par            
+            if s.find(par_dsin) > -1:
+                # check structure of the file
+                splitted = s.split()            
+                two_lines = len(splitted) != 8 #True if all in one line
+                
+                # first we check that the parameter is not an auxiliary
+                # parameter (5th value of the 'array line' should be a 1)
+                if two_lines: index=0
+                else: index=4
+                if check_auxiliary and not splitted[index] == '1':
+                    raise ValueError("The parameter %s is of type 'auxiliary'.\n\
+                    it cannot be set in the dymosim input file. " % (parameter))# check if the value to write is in this line, or the previous one
+                    
+                # now changing the value:
+                if two_lines:                    
+                    #We have to change the 
+                    # second value of the previous line
+                    prev_splitted = lines[linenumber-1].split()              
+                    old_value = copy.copy(prev_splitted[1])
+                    prev_splitted[1] = str(val)
+                    prev_splitted.append('\n')
+                    lines[linenumber-1] = ' '.join(prev_splitted)
+                else:
+                    # all is nicely in one line
+                    old_value = copy.copy(splitted[1])
+                    splitted[1] = str(val)
+                    splitted.append('\n')  
+                    lines[linenumber] = ' '.join(splitted)
+                print '%s found in %s: %s is replaced by %s' % (par, dsin, old_value, val)
+                
+                break
+        
+    # Write the file
+    
+    if copy_to is None:
+        copy_to = dsin
+    
+    writefile = file(copy_to, 'w')
+    writefile.writelines(lines)
+    writefile.close()
+    
+      
+
     
 
 def start_parametric_run(path):

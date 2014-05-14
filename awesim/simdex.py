@@ -364,13 +364,13 @@ class Simdex:
                         # Now, check the simulation runtime against previously 
                         # confirmed start and stop times
                         time = sim.get_value('Time')
-                        
-                        if self.simulationstart == time[0] and \
+                        if len(time) == 0:
+                            print '{} has a zero-length time vector, it is NOT indexed.'.format(sim.filename)
+                        elif self.simulationstart == time[0] and \
                             self.simulationstop == time[-1]:
                             # index this new simulation 
                             self.index_one_sim(sim, process=process)
                             print '%s indexed' % (sim.filename)
-                                                
                         else:
                             print '%s, runs from %d s till %d s, therefore, it \
                                is NOT indexed' % (sim.filename, time[0],time[-1])
