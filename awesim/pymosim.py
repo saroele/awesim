@@ -144,16 +144,31 @@ def set_pars(pardic, dsin='dsin.txt', copy_to=None, check_auxiliary=False):
     
     """
 
+    
+
     orig_file = open(dsin, 'r')
     lines = orig_file.readlines() # list of strings, each ending with '\n'
     orig_file.close()
-    
-    for linenumber, s in enumerate(lines):
-        for par, val in pardic.iteritems():
-            par_dsin = '# '+par            
-            if s.find(par_dsin) > -1:
+
+    # only search the relevant part of the file
+    for ln, line in enumerate(lines):
+        if line.find('double initialValue(') > -1:
+            start=ln
+        elif line.find('char initialDescription(') > -1:
+            end=ln
+            break
+        
+    pardic_to_search = pardic.copy()
+    #pardic_remaining = pardic.copy()
+    lines_ = lines[start:end]
+    #foundpar = None
+            
+    for linenumber, s in enumerate(lines_):
+        splitted = s.split()
+        for par, val in pardic_to_search.iteritems():
+            if par in splitted:
+                #print '{} found'.format(par)
                 # check structure of the file
-                splitted = s.split()            
                 two_lines = len(splitted) != 8 #True if all in one line
                 
                 # first we check that the parameter is not an auxiliary
@@ -162,26 +177,27 @@ def set_pars(pardic, dsin='dsin.txt', copy_to=None, check_auxiliary=False):
                 else: index=4
                 if check_auxiliary and not splitted[index] == '1':
                     raise ValueError("The parameter %s is of type 'auxiliary'.\n\
-                    it cannot be set in the dymosim input file. " % (parameter))# check if the value to write is in this line, or the previous one
+                    it cannot be set in the dymosim input file. " % (par))# check if the value to write is in this line, or the previous one
                     
                 # now changing the value:
                 if two_lines:                    
                     #We have to change the 
                     # second value of the previous line
-                    prev_splitted = lines[linenumber-1].split()              
+                    prev_splitted = lines[start+linenumber-1].split()              
                     old_value = copy.copy(prev_splitted[1])
                     prev_splitted[1] = str(val)
                     prev_splitted.append('\n')
-                    lines[linenumber-1] = ' '.join(prev_splitted)
+                    lines[start+linenumber-1] = ' '.join(prev_splitted)
                 else:
                     # all is nicely in one line
                     old_value = copy.copy(splitted[1])
                     splitted[1] = str(val)
                     splitted.append('\n')  
-                    lines[linenumber] = ' '.join(splitted)
-                print '%s found in %s: %s is replaced by %s' % (par, dsin, old_value, val)
-                
+                    lines[start+linenumber] = ' '.join(splitted)
+                print '%s found: %s is replaced by %s' % (par,old_value, val)
+                pardic_to_search.pop(par)
                 break
+        
         
     # Write the file
     
@@ -192,8 +208,72 @@ def set_pars(pardic, dsin='dsin.txt', copy_to=None, check_auxiliary=False):
     writefile.writelines(lines)
     writefile.close()
     
+    print "These parameters were NOT found:\n"
+    for i in sorted(pardic_to_search.keys()):
+        print i
+    
       
+def get_pars(pars, dsin='dsfinal.txt'):
+    """
+    Get all parameter values from existing dsfinal.txt or dsin.txt
+    
+    Parameters
+    ----------
+    
+    pars: list with parameter values to obtain
+    dsin: filename of the dsfinal.txt or dsin.txt. 
+        
+    """
 
+    orig_file = open(dsin, 'r')
+    lines = orig_file.readlines() # list of strings, each ending with '\n'
+    orig_file.close()
+    
+    # only search the relevant part of the file
+    for ln, line in enumerate(lines):
+        if line.find('double initialValue(') > -1:
+            start=ln
+        elif line.find('char initialDescription(') > -1:
+            end=ln
+            break
+        
+    lines = lines[start:end]
+        
+    pars_to_search = pars[:]
+    pardic = {}
+    
+    for linenumber, s in enumerate(lines):
+        for par in pars_to_search:
+            par_dsin = '# '+par            
+            if s.find(par_dsin) > -1:
+                # check structure of the file
+                splitted = s.split()            
+                two_lines = len(splitted) != 8 #True if all in one line
+                
+                # first we check that the parameter is not an auxiliary
+                # parameter (5th value of the 'array line' should be a 1)
+                if two_lines: index=0
+                else: index=4
+
+                # now get the value:
+                if two_lines:                    
+                    #We have to get the 
+                    # second value of the previous line
+                    prev_splitted = lines[linenumber-1].split()              
+                    pardic[par] = prev_splitted[1]
+                    
+                else:
+                    # all is nicely in one line
+                    pardic[par] = splitted[1]
+                    
+                print '%s found: %s' % (par, pardic[par])
+                pars_to_search.remove(par)
+                break
+        
+    print "The following parameters are not found:\n{}".format(pars_to_search)
+    
+    return pardic
+    
     
 
 def start_parametric_run(path):
