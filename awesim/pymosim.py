@@ -55,11 +55,28 @@ def set_solver(solver, dsin = '', copy_to = None):
     if copy_to != None:    
         shutil.copyfile('dsin_temp.txt', copy_to)
     
-def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
+def set_times(StartTime=0, StopTime=86400, Increment=60, dsin='', copy_to=None):
     """
-    better name to be found.  set_times? 
+    Set these simulation options in a dsin file 
     """
-    pass
+    orig_file = open(dsin, 'r')
+    lines = orig_file.readlines() # list of strings, each ending with '\n'
+    orig_file.close()
+    
+    for i,l in enumerate(lines[:20]):
+        for to_find in ['StartTime', 'StopTime', 'Increment']:
+            if l.find(to_find) > -1:
+                print l
+                splitted = l.split()
+                lines[i]=' '.join([str(eval(to_find))]+splitted[1:]+['\r\n'])
+                print lines[i]
+    # Write the file
+    if copy_to is None:
+        copy_to = dsin
+    
+    writefile = file(copy_to, 'w')
+    writefile.writelines(lines)
+    writefile.close()
 
 def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     """
