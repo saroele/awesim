@@ -621,6 +621,7 @@ class Simdex:
                 step_size_min = tbl.Float32Col()
                 step_size_max = tbl.Float32Col()
                 int_order_max = tbl.Int32Col()
+                jacobians = tbl.Int32Col()
                 
                 
                 

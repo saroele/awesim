@@ -55,7 +55,7 @@ def set_solver(solver, dsin = '', copy_to = None):
     if copy_to != None:    
         shutil.copyfile('dsin_temp.txt', copy_to)
     
-def set_times(StartTime=0, StopTime=86400, Increment=60, dsin='', copy_to=None):
+def set_times(StartTime=0, StopTime=86400, Increment=60, nInterval=0, dsin='', copy_to=None):
     """
     Set these simulation options in a dsin file 
     """
@@ -64,7 +64,7 @@ def set_times(StartTime=0, StopTime=86400, Increment=60, dsin='', copy_to=None):
     orig_file.close()
     
     for i,l in enumerate(lines[:20]):
-        for to_find in ['StartTime', 'StopTime', 'Increment']:
+        for to_find in ['StartTime', 'StopTime', 'Increment', 'nInterval']:
             if l.find(to_find) > -1:
                 print l
                 splitted = l.split()
