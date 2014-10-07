@@ -54,12 +54,50 @@ def set_solver(solver, dsin = '', copy_to = None):
     # only if original dsin had to be replaced
     if copy_to != None:    
         shutil.copyfile('dsin_temp.txt', copy_to)
+ 
+ 
+def set_init_from_file(source_path, destination_path, startTime=None, stopTime=None):
+    """
+	replace the 'destination' file with a 'source 'file. 
+	Function to replace a Dymola simulation file (dsin.txt, with initial values for all variables) by 
+	a Dymola simulation file (dsfinal.txt, with end values for every variable). 
+		- startTime: reset the txtline indicating the start of the simulation with startTime (s)
+		- stopTime: reset the txtline indicating the end of the simulation with stopTime (s)
+	"""
     
-def set_ststst(start = 0, stop = 86400, step = 60, dsin = '', copy_to = None):
-    """
-    better name to be found.  set_times? 
-    """
-    pass
+    if startTime==None and stopTime==None:
+        shutil.copyfile(source_path,destination_path)
+    else:
+        with    open(source_path,'r') as input_file, \
+                open(destination_path, 'w') as output_file:
+
+            if startTime==None:  # startTime is not None
+                for line in input_file:
+                    if '# StopTime' in line:
+                        output_file.write( str(stopTime)   +\
+                        '                       # StopTime     Time at which integration stops\n')             
+                    else:
+                        output_file.write(line)
+                        
+            if stopTime==None: # stopTime is not None
+                for line in input_file:
+                    if'# StartTime' in line:
+                        output_file.write( str(startTime)   +\
+                        '                       # StartTime     Time at which integration starts\n')
+                    else:
+                        output_file.write(line)
+            
+            else:               # both are not None
+                for line in input_file:                        
+                    if '# StopTime' in line:
+                        output_file.write( str(stopTime)   +\
+                        '                       # StopTime     Time at which integration stops\n')
+                    elif'# StartTime' in line:
+                        output_file.write( str(startTime)   +\
+                        '                       # StartTime     Time at which integration starts\n')
+                    else:
+                        output_file.write(line)
+    
 
 def set_par(parameter, value, dsin='dsin.txt', copy_to=None):
     """
@@ -284,7 +322,7 @@ def cleanup_parrun(workdir, targetdir=None, subdir=None, remove=False):
 
          
 
-def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim = ''):
+def set_simulation(path, parameters, values, copy_to = None, dsin_old = '', dsin_new = '', dymosim = ''):
     """
     This function sets everything ready for starting a new simulation based on
     the given parameters. 
@@ -295,39 +333,71 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
     values = the values the depicted parameters need to get 
     copy_to = a follow number for creating subfiles
     """
-    
-    os.chdir(path)    
-    
-    if dsin == '':
+    my_wor_dir = os.getcwd()
+    os.chdir(path)  
+    if dsin_old == '':
         dsin = 'dsin.txt'
-    
+    else:
+        dsin = dsin_old
+        
+    if dsin_new == '':
+        dsin_new = 'dsin.txt'
+        
+    replace_original = False
+    if dsin==dsin_new:
+        replace_original=True
+        dsin_new = dsin_new.strip('.txt')+'temp.txt'
+        
     if dymosim == '':
         dymosim = 'dymosim.exe'
-
-    dsin_file = open(dsin, 'r')
-    file_data = dsin_file.readlines()
-    dsin_file.close()
-
-    for i in range(len(file_data)):
-        for j in range(len(parameters)):
-            if file_data[i].find(parameters[j]) > -1:
-                # check structure of file: all on single line or on 2 lines                
-                if file_data[i-1].find(u'#') > -1:
-                    line = i
-                else:
-                    line = i-1
-                splitted = file_data[line].split()
-                splitted[1] = str(values[j])
-                splitted.append('\n')
-                file_data[line] = ' '.join(splitted)
-                print 'The parameter %s is found in %s and is replaced by %s' \
-                        %(parameters[j], dsin, values[j])
-
-    dsin_temp = open('dsin_temp.txt', 'w')
-    dsin_temp.writelines(file_data)
-    dsin_temp.close()
+        
+    my_pars = list(parameters)
+    my_vals = list(values)
+    # Get parameters from sim in order of appearance
+    sorted_pars = []
+    sorted_vals = []
+    with open(dsin,'r') as old_file:
+        for f in old_file:  
+            #pdb.set_trace()
+            if '# ' in f:
+                if any(x in f.split() for x in my_pars):
+                    for i, par in enumerate(my_pars):
+                        if par in f.split():
+                            sorted_pars.append(par)
+                            sorted_vals.append(my_vals[i])
+                            my_index = i
+                    my_pars.pop(my_index)
+                    my_vals.pop(my_index)
+    if len(sorted_pars)<len(parameters):
+        print 'the following parameters where not found in dsin_old: {}'.format(list(set(parameters) - set(sorted_pars)))
+    # rewrite to new file and change lines of parameters in 'parameters'
+    with open(dsin,'r') as old_file, open(dsin_new,'w') as new_file:
+        pars_passed=0
+        line_nb=0
+        search_par = sorted_pars[pars_passed]
+        search_val = sorted_vals[pars_passed]
+        for f in old_file:  
+            if line_nb==0:
+                to_write = ""
+            elif '# '+search_par + '\n' in f:
+                to_write_tmp = prev_line.split()
+                to_write = ' '.join(to_write_tmp[:1] + [str(search_val)] + to_write_tmp[2:] + ['\n'])
+                pars_passed+=1
+                try:
+                    search_par = sorted_pars[pars_passed]
+                    search_val = sorted_vals[pars_passed]
+                except:
+                    pass
+            else:
+                to_write = prev_line
+            new_file.write(to_write)
+            prev_line = f
+            line_nb+=1
+        new_file.write(prev_line)
     
-    #pdb.set_trace()
+    if replace_original:
+        shutil.copyfile(dsin_new, dsin_old)
+    
     if copy_to != None:
         dsin_to = os.getcwd() + '\\run_' + str(copy_to)
         dsin_file = os.getcwd() + '\\run_' + str(copy_to) + '\\dsin.txt'
@@ -335,8 +405,11 @@ def set_simulation(path, parameters, values, copy_to = None, dsin = '', dymosim 
         os.makedirs(dsin_to)
         shutil.copyfile('dsin_temp.txt', dsin_file)
         shutil.copyfile(dymosim, dymosim_file)
-
-
+    else:
+        dsin_to = os.getcwd()
+        
+    os.chdir(my_wor_dir) 
+    
     return dsin_to
     
 
@@ -425,7 +498,7 @@ def analyse_log(log_file):
         summary['perc_wrong'] = 0
     return summary        
         
-def run_ds(dymosim = '', dsin = '', result = ''):
+def run_ds(dymosim = '', dsin = '', result = '', dsu=''):
     """
     run_ds(dymosim = '', file_in = '', result = '')    
     
@@ -441,16 +514,19 @@ def run_ds(dymosim = '', dsin = '', result = ''):
     
     arguments = {'dymosim':'dymosim', 
                 'dsin':'dsin.txt', 
-                'result':'result.mat'}
+                'result':'result.mat',
+                'dsu': 'dsu.txt'}
     
     for arg in arguments:
         if eval(arg) is not '':
             arguments[arg] = eval(arg)
-        
+    print arguments    
     
-    oscmd = ' '.join([arguments['dymosim'], '-s', arguments['dsin'], 
-                      arguments['result']])
-        
+    oscmd = ' '.join([arguments['dymosim'], '-s','-u', arguments['dsu'],
+                    arguments['dsin'], arguments['result']])
+
+    print oscmd
+    
     proc = Popen(oscmd)
     return proc    
     
