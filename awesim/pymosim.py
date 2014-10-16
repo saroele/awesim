@@ -55,21 +55,30 @@ def set_solver(solver, dsin = '', copy_to = None):
     if copy_to != None:    
         shutil.copyfile('dsin_temp.txt', copy_to)
  
-def set_times(StartTime=0, StopTime=86400, Increment=60, nInterval=0, dsin='', copy_to=None):
+def set_times(StartTime=None, StopTime=None, Increment=None, nInterval=None, dsin=None, copy_to=None, verbose=True):
     """
     Set these simulation options in a dsin file 
     """
+    
+    to_set = [x for x in ['StartTime', 'StopTime', 'Increment', 'nInterval']\
+              if eval(x) is not None]
+    
+    if dsin is None:
+        dsin = 'dsin.txt'
+    
     orig_file = open(dsin, 'r')
     lines = orig_file.readlines() # list of strings, each ending with '\n'
     orig_file.close()
     
     for i,l in enumerate(lines[:20]):
-        for to_find in ['StartTime', 'StopTime', 'Increment', 'nInterval']:
+        for to_find in to_set:
             if l.find(to_find) > -1:
-                print l
+                if verbose:
+                    print l
                 splitted = l.split()
                 lines[i]=' '.join([str(eval(to_find))]+splitted[1:]+['\r\n'])
-                print lines[i]
+                if verbose:
+                    print lines[i]
     # Write the file
     if copy_to is None:
         copy_to = dsin
@@ -255,7 +264,7 @@ def set_pars(pardic, dsin='dsin.txt', copy_to=None, check_auxiliary=False):
                     splitted[1] = str(val)
                     splitted.append('\n')  
                     lines[start+linenumber] = ' '.join(splitted)
-                print '%s found: %s is replaced by %s' % (par,old_value, val)
+                #print '%s found: %s is replaced by %s' % (par,old_value, val)
                 pardic_to_search.pop(par)
                 break
         
@@ -269,9 +278,10 @@ def set_pars(pardic, dsin='dsin.txt', copy_to=None, check_auxiliary=False):
     writefile.writelines(lines)
     writefile.close()
     
-    print "These parameters were NOT found:\n"
-    for i in sorted(pardic_to_search.keys()):
-        print i
+    if len(pardic_to_search) > 0:
+        print "These parameters were NOT found:\n"
+        for i in sorted(pardic_to_search.keys()):
+            print i
     
       
 def get_pars(pars, dsin='dsfinal.txt'):
